@@ -1,15 +1,20 @@
 <!DOCTYPE html>
-<!-- Tardywood 0.2.2 — MIT — https://github.com/badLama/tardywoodtoy -->
+<!-- Tardywood 0.2.4 — MIT — https://github.com/badLama/tardywoodtoy -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap" rel="stylesheet">
 
 <meta name="robots" content="noindex">
 <title>Tardywood</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #fff;
-               font-family: "Comic Sans MS", "Chalkboard SE", "Segoe Print", cursive, sans-serif; }
+               font-family: "Comic Sans MS", "Chalkboard SE", "Segoe Print", "Comic Neue",
+                            cursive, sans-serif; }
 
   canvas { display: block; user-select: none; }
   #plant { position: fixed; inset: 0; background: #fff; }
@@ -78,6 +83,37 @@
   }
   #resetask::before { bottom: -12px; border-top: 12px solid #000; }
   #resetask::after  { bottom: -8px;  border-top: 12px solid #fff; }
+
+  @media (max-width: 700px) {
+
+    #plant { overflow-y: auto; }
+    #plant > div { position: static; flex-direction: column; align-items: stretch;
+                   padding: 5vh 5vw 3vh; gap: 2vh; }
+    #pv-half { flex: 0 0 auto; }
+
+    #pick    { flex: 0 0 auto; padding-left: 0; --lbl: 80px; }
+
+    .row .lbl { flex: 0 0 var(--lbl); }
+    #plant h1  { top: 2vh; right: 5vw; font-size: 19px; }
+    #plant .sub { font-size: 21px; }
+
+    button { min-height: 44px; padding: 8px 16px; }
+    #go { min-height: 52px; margin-left: 0; align-self: flex-start; }
+    #home .btns button { min-height: 48px; }
+
+    #dev { opacity: .7; }
+    #dev button { min-height: 34px; font-size: 13px; padding: 4px 11px; }
+    #resetask { font-size: 14px; bottom: 52px; }
+
+    canvas, button { touch-action: manipulation; }
+  }
+
+  .rotate { display: none; }
+  @media (max-width: 700px) and (orientation: portrait) {
+    .rotate { display: block; max-width: 30ch; text-align: center; color: #666;
+              font-size: 14px; line-height: 1.5; margin-top: 15px;
+              transform: rotate(-.6deg); }
+  }
 </style>
 </head>
 <body>
@@ -94,8 +130,9 @@
   </div>
   <p class="note">Your wood lives in this browser and nowhere else. Clearing the browser's
     data clears the wood, and it will not follow you to another browser.</p>
+  <p class="rotate">turn your phone sideways &mdash; the wood is wider than it is tall.</p>
 
-  <div class="foot">v0.2.2 &middot; MIT &middot;
+  <div class="foot">v0.2.4 &middot; MIT &middot;
     <a href="https://github.com/badLama/tardywoodtoy">source</a></div>
 </div>
 
@@ -136,7 +173,7 @@ function drainRate(gh) { return STAGE_DRAIN[stageOf(gh)]; }
 const INK         = "#000";
 const WATER_COL   = "#2563eb";
 
-const fontFam = "'Comic Sans MS', 'Chalkboard SE', 'Segoe Print', cursive, sans-serif";
+const fontFam = "'Comic Sans MS', 'Chalkboard SE', 'Segoe Print', 'Comic Neue', cursive, sans-serif";
 const LEAF_COL    = "rgb(30,170,45)";
 
 const GRASS_TALL  = "rgb(23,128,34)";
@@ -302,6 +339,12 @@ function freshSalt() { return Math.random().toString(36).slice(2, 6); }
 
 function childSeed(parentSeed) { return seedFrom(parseSeed(parentSeed), freshSalt()); }
 
+function strangerSeed() {
+  const o = { salt: freshSalt() };
+  for (const k of AXES) o[k] = KINDS[k][Math.floor(Math.random() * KINDS[k].length)];
+  return seedFrom(o, o.salt);
+}
+
 function growTree(seed, gh) {
   const p = parseSeed(seed), out = [];
   gh = Math.max(0, gh);
@@ -422,6 +465,53 @@ function growTree(seed, gh) {
 
 function stageOf(gh) { let s = 0; for (let i = 0; i < STAGES.length; i++) if (gh >= STAGES[i]) s = i; return s; }
 
+const RAIN_GAP_MIN  = 20, RAIN_GAP_MAX  = 40;
+const RAIN_SHOW_MIN = 30, RAIN_SHOW_MAX = 60;
+const RAIN_MINS  = (RAIN_GAP_MIN + RAIN_GAP_MAX) / 2;
+
+const RAIN_JITTER = (RAIN_GAP_MAX - RAIN_GAP_MIN) / (RAIN_GAP_MAX + RAIN_GAP_MIN);
+const RAIN_EVERY = RAIN_MINS / 60 * TIME_SCALE;
+function gameHours(ms, ts) { return ms / 3600000 * (ts || TIME_SCALE); }
+function rainSlot(i) {
+  const r = prng("rain|" + i);
+  return i * RAIN_EVERY + r() * RAIN_EVERY * RAIN_JITTER;
+}
+function rainShow(i) {
+  const r = prng("rainlen|" + i);
+  return RAIN_SHOW_MIN + r() * (RAIN_SHOW_MAX - RAIN_SHOW_MIN);
+}
+
+function rainSlotOf(t) {
+  const k = Math.floor(t / RAIN_EVERY);
+  for (let j = k - 1; j <= k + 1; j++) if (rainSlot(j) === t) return j;
+  return k;
+}
+
+function rainOnsets(a, b) {
+  const out = [];
+  for (let k = Math.floor(a / RAIN_EVERY) - 1; k <= Math.floor(b / RAIN_EVERY) + 1; k++) {
+    const t = rainSlot(k);
+    if (t > a && t <= b) out.push(t);
+  }
+  return out.sort(function (x, y) { return x - y; });
+}
+
+function rainNow() {
+  if (CALM) return 0;
+  const now = Date.now(), g = gameHours(now);
+  const on = rainOnsets(g - RAIN_EVERY * 2, g);
+  if (!on.length) return 0;
+  const last = on[on.length - 1], startedMs = last * 3600000 / TIME_SCALE;
+
+  let next = last + RAIN_EVERY;
+  for (let k = Math.floor(last / RAIN_EVERY); k <= Math.floor(last / RAIN_EVERY) + 2; k++)
+    if (rainSlot(k) > last) { next = rainSlot(k); break; }
+  const show = Math.min(rainShow(rainSlotOf(last)), (next - last) * 3600 / TIME_SCALE * 0.5);
+  const age = (now - startedMs) / 1000;
+  return age >= 0 && age < show ? 1 - age / show : 0;
+}
+function raining() { return rainNow() > 0; }
+
 function advance(state, nowMs, timeScale) {
   let elapsed = Math.max(0, (nowMs - state.lastTick) / 3600000) * (timeScale || 1);
   if (elapsed === 0) return state;
@@ -443,7 +533,16 @@ function advance(state, nowMs, timeScale) {
   });
 }
 
+function saveAt() {
+  if (!S) return;
+  const at = ringWrap(av.x);
+  if (S.at != null && Math.abs(ringDelta(S.at, at)) < 1) return;
+  S.at = at;
+  save();
+}
 function save() {
+
+  if (!S) return;
 
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {}
 }
@@ -490,7 +589,9 @@ const CAN_USES = 3;
 let dry = 0;
 let filling = 0;
 
-let reminded = false;
+let justSown = 0;
+const THIRSTY = 25;
+function thirsty(T) { return T.moisture < THIRSTY; }
 const RESET_ARMED = 6;
 let resetTimer = null;
 let bubbleT = 0, bubbleTxt = null, bubbleTimer = null;
@@ -551,6 +652,29 @@ function seedNear(wx) {
   }
   return best;
 }
+
+function looseState(g) {
+  const gameH = (Date.now() - g.at) / 3600000 * TIME_SCALE;
+  return gameH < SEED_LIFE_H ? "ripe" : "rotten";
+}
+function looseNear(wx) {
+  let best = -1, bd = SEED_REACH;
+  const L = S.loose || [];
+  for (let i = 0; i < L.length; i++) {
+    if (looseState(L[i]) !== "ripe") continue;
+    const d = Math.abs(ringDelta(L[i].x, wx));
+    if (d < bd) { bd = d; best = i; }
+  }
+  return best;
+}
+function takeLoose(id) {
+  const L = S.loose || [], i = L.findIndex(function (g) { return g.id === id; });
+  if (i < 0) return;
+  S.seeds.push(L[i].seed);
+  L.splice(i, 1);
+  save();
+}
+
 function tooCloseToTrunk(wx) {
   return S.trees.some(t => Math.abs(ringDelta(t.x, wx)) < PLANT_GAP);
 }
@@ -589,13 +713,20 @@ function resize() {
   SCALE = VH / WORLD_H;
   draw();
 }
-window.addEventListener("resize", function () {
-  resize();
-
+function redrawOpenScreen() {
   const p = document.getElementById("plant"), h = document.getElementById("home");
   if (p.style.display !== "none") drawPreview();
   if (h.style.display !== "none") drawHomeTree();
+}
+window.addEventListener("resize", function () {
+  resize();
+  redrawOpenScreen();
 });
+
+if (document.fonts && document.fonts.ready &&
+    !["'Comic Sans MS'", "'Chalkboard SE'", "'Segoe Print'"]
+       .some(function (f) { return document.fonts.check("13px " + f); }))
+  document.fonts.ready.then(function () { draw(); redrawOpenScreen(); });
 
 function drawLeafGlyph(cx, g, X, Y, sc, col, key, droop) {
   cx.strokeStyle = col; cx.lineWidth = Math.max(1, 1.2 * sc);
@@ -664,6 +795,36 @@ function drawSwamp() {
   }
 }
 
+const RAIN_N = 340;
+let rainField = null;
+function rainDrops() {
+  if (rainField) return rainField;
+  const r = prng("raindrops");
+  rainField = [];
+  for (let i = 0; i < RAIN_N; i++)
+    rainField.push({ x: r(), sp: 0.75 + r() * 0.45, ph: r(), len: 0.6 + r() * 0.7 });
+  return rainField;
+}
+
+function drawRain(strength) {
+  const t = nowSec();
+  ctx.save();
+  ctx.strokeStyle = WATER_COL;
+  ctx.lineWidth = Math.max(1.1, 1.35 * SCALE);
+  ctx.lineCap = "round";
+  ctx.globalAlpha = 0.58 + 0.32 * strength;
+
+  const top = -45, span = Math.max(60, sy(0) - top), drops = rainDrops();
+  for (let i = 0; i < drops.length; i++) {
+    const d = drops[i];
+    const y = ((t * d.sp * 620 + d.ph * span) % span) + top;
+    const x = d.x * VW;
+
+    sketchLine(ctx, x, y, x, y + 7.5 * d.len * SCALE, "rain" + i, 0.45);
+  }
+  ctx.restore();
+}
+
 function drawGround() {
   ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
   const y = sy(0);
@@ -680,12 +841,198 @@ function drawGround() {
     if (rr() < 0.45) continue;
     const X = sx(wx), Y = sy(0);
     ctx.lineWidth = 1.1;
+    const tw = windNow(wx) * WIND_GRASS * 0.22;
     for (let i = 0; i < 3; i++)
-      sketchLine(ctx, X + i * 3 - 3, Y, X + i * 3 - 4 + (rr() - .5) * 6, Y - 5 - rr() * 6, k + i, 0.8);
+      sketchLine(ctx, X + i * 3 - 3, Y, X + i * 3 - 4 + (rr() - .5) * 6 + tw, Y - 5 - rr() * 6, k + i, 0.8);
   }
 }
 
 const PART_R = 18, PART_MAX = 9;
+
+const GUST_EVERY = 40;
+const GUST_LEN   = 6;
+const WIND_GRASS = 15;
+const WIND_TREE  = 0.05;
+function gust(i) {
+  const r = prng("gust|" + i);
+  return { t0: i * GUST_EVERY + r() * GUST_EVERY * 0.55,
+           amp: 0.45 + r() * 0.55, dir: r() < 0.5 ? -1 : 1,
+           waves: 1 + Math.floor(r() * 5), laps: 0.5 + r() * 1.5, ph: r() * 6.283 };
+}
+
+const CALM = new URLSearchParams(location.search).get("calm") === "1";
+
+let windClock = null;
+function nowSec() { return windClock != null ? windClock : Date.now() / 1000; }
+
+function windAt(t, wx) {
+  let w = 0;
+  const th = 2 * Math.PI * ringWrap(wx) / CIRCUM;
+  const i = Math.floor(t / GUST_EVERY);
+  for (let k = i - 1; k <= i + 1; k++) {
+    const g = gust(k), u = (t - g.t0) / GUST_LEN;
+    if (u <= 0 || u >= 1) continue;
+    w += g.dir * g.amp * Math.sin(u * Math.PI) *
+         (0.65 + 0.35 * Math.sin(g.waves * th - u * Math.PI * 2 * g.laps + g.ph));
+  }
+  return Math.max(-1, Math.min(1, w));
+}
+function windNow(wx) { return CALM ? 0 : windAt(nowSec(), wx); }
+function windLive(t) {
+  if (CALM) return false;
+  const i = Math.floor(t / GUST_EVERY);
+  for (let k = i - 1; k <= i + 1; k++) {
+    const g = gust(k);
+    if (t > g.t0 && t < g.t0 + GUST_LEN) return true;
+  }
+  return false;
+}
+function nextGustAt(t) {
+  const i = Math.floor(t / GUST_EVERY);
+  for (let k = i; k <= i + 2; k++) if (gust(k).t0 > t) return gust(k).t0;
+  return t + GUST_EVERY;
+}
+
+let windTimer = null;
+function scheduleWind() {
+  clearTimeout(windTimer);
+  const t = nowSec(), wait = Math.max(0.05, nextGustAt(t) - t);
+  windTimer = setTimeout(function () { windTimer = null; if (S) wake(); }, wait * 1000);
+}
+
+const IDLE_AFTER = 7, IDLE_GAP = 9;
+let idleAct = null, idleTimer = null;
+function idleBusy() {
+  return !S || planting > 0 || watering > 0 || filling > 0 || pending ||
+         keyDir || Math.abs(av.v) > 0.4 || Math.abs(ringDelta(av.x, targetX)) > 1.5;
+}
+function scheduleIdle(first) {
+  clearTimeout(idleTimer); idleTimer = null;
+  if (CALM) return;
+  idleTimer = setTimeout(function () {
+    idleTimer = null;
+    if (idleBusy()) return scheduleIdle(false);
+
+    const near = S.trees.filter(function (T) { return Math.abs(ringDelta(T.x, av.x)) < 240; });
+    idleAct = { kind: near.length && Math.random() < 0.55 ? "lookup" : "scratch",
+                t: 0, dur: 2.6 + Math.random() * 1.6, amt: 0 };
+    if (idleAct.kind === "lookup")
+      av.face = ringDelta(av.x, near[Math.floor(Math.random() * near.length)].x) > 0 ? 1 : -1;
+    wake();
+  }, (first ? IDLE_AFTER : IDLE_GAP) * 1000 * (0.7 + Math.random() * 0.6));
+}
+
+function idleTick(dt) {
+  if (!idleAct) return;
+  if (idleBusy()) { idleAct = null; scheduleIdle(false); return; }
+  idleAct.t += dt;
+  const u = idleAct.t / idleAct.dur;
+  if (u >= 1) { idleAct = null; scheduleIdle(false); return; }
+  idleAct.amt = Math.sin(Math.min(1, Math.min(u, 1 - u) / 0.3) * Math.PI / 2);
+}
+
+const BIRD_AFTER = 150, BIRD_GAP = 260;
+
+const BIRD_LEAD = 1.5, BIRD_TRIP = 3.4;
+let bird = null, birdTimer = null;
+
+function spawnBird() {
+  const dir = Math.random() < 0.5 ? -1 : 1, span = VW / SCALE;
+  const sky = sy(0) / SCALE;
+  bird = { x: ringWrap(av.x - dir * span * BIRD_LEAD), dir: dir,
+
+           h: Math.max(120, sky * (0.45 + Math.random() * 0.28)),
+           flown: 0, cross: span * BIRD_TRIP,
+           dropAt: span * BIRD_TRIP * (0.12 + Math.random() * 0.8),
+           seed: strangerSeed(), dropped: false };
+  wake();
+}
+function scheduleBird() {
+  clearTimeout(birdTimer); birdTimer = null;
+  if (CALM) return;
+  birdTimer = setTimeout(function () {
+    birdTimer = null;
+    if (S) spawnBird();
+  }, (BIRD_AFTER + Math.random() * (BIRD_GAP - BIRD_AFTER)) * 1000);
+}
+const BIRD_SPEED = 105;
+function birdTick(dt) {
+  if (!bird) return;
+  bird.flown += BIRD_SPEED * dt;
+  bird.x = ringWrap(bird.x + bird.dir * BIRD_SPEED * dt);
+  if (!bird.dropped && bird.flown >= bird.dropAt) {
+
+    if (tooCloseToTrunk(bird.x) || inSwamp(bird.x)) bird.dropAt = bird.flown + 40;
+    else {
+      bird.dropped = true;
+      birdSeed = { x: ringWrap(bird.x + bird.dir * BIRD_BEAK), y: -bird.h, v: 0,
+                   seed: bird.seed };
+    }
+  }
+  if (bird.flown >= bird.cross) { bird = null; scheduleBird(); }
+}
+
+let birdSeed = null;
+function birdSeedTick(dt) {
+  if (!birdSeed) return;
+  birdSeed.v += 150 * dt;
+  birdSeed.y += birdSeed.v * dt;
+  if (birdSeed.y >= 0) {
+    if (!S.loose) S.loose = [];
+    S.loose.push({ x: birdSeed.x, seed: birdSeed.seed, at: Date.now(),
+                   id: Math.random().toString(36).slice(2, 8) });
+    birdSeed = null;
+    save();
+  }
+}
+
+const BIRD_WING = 14, BIRD_BODY = 6.5;
+const BIRD_CHORD = 6.2;
+const BIRD_BEAK = 12.2;
+function birdWing(X, Y, a, L, f, u, chord) {
+  const dx = -f * 0.42 * Math.cos(a), dy = -Math.sin(a);
+  const mx = X + dx * L * 0.55, my = Y + dy * L * 0.55;
+  const tx = X + dx * L, ty = Y + dy * L;
+  const c = -f * chord;
+  return [[X, Y],
+          [mx - f * 0.7 * u, my],
+          [tx, ty],
+          [tx + c * 0.35, ty - dy * L * 0.14],
+          [mx + c * 0.72, my],
+          [X + c, Y + 0.8 * u]];
+}
+function drawBird() {
+  if (!bird) return;
+  const u = SCALE, f = bird.dir, ph = bird.flown / 10;
+  const burst = 0.45 + 0.55 * Math.max(0, Math.sin(bird.flown / 130));
+  const a = (0.28 + 0.82 * Math.sin(ph)) * burst;
+  const X = sx(bird.x), Y = sy(-bird.h) + Math.sin(ph) * 2.2 * burst * u;
+  const rot = -0.09 * f, R = BIRD_BODY * u;
+  const nx = X + f * R * Math.cos(rot), ny = Y + f * R * Math.sin(rot);
+  const tx = X - f * R * Math.cos(rot), ty = Y - f * R * Math.sin(rot);
+  const hx = nx + f * 1.3 * u, hy = ny - 1.0 * u;
+  ctx.save();
+  ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, 1.05 * u); ctx.lineJoin = "round";
+  ctx.fillStyle = "#fff";
+
+  sketchPoly(ctx, birdWing(X - 1.5 * u * f, Y + 1.1 * u, a * 0.8 - 0.34, BIRD_WING * 0.8 * u,
+                           f, u, BIRD_CHORD * 0.8 * u), "bird|far", 0.6, true);
+  sketchPoly(ctx, [[tx, ty - 0.4 * u], [tx - f * 6.4 * u, ty - 2.0 * u],
+                   [tx - f * 6.8 * u, ty + 0.5 * u], [tx, ty + 0.5 * u]], "bird|tail", 0.6, true);
+  sketchShape(ctx, ptsRugby(X, Y, R, 2.2 * u, rot, 7), "bird|body", 0.5);
+  sketchShape(ctx, ptsEllipse(hx, hy, 2.2 * u, 2.0 * u, 0, 9), "bird|head", 0.5);
+
+  if (!bird.dropped)
+    drawSeedGlyph(X + f * (BIRD_BEAK + 1.4) * u, hy + 3.2 * u, u * 0.58,
+                  "bird|carry", 0.34 * f, "#fff");
+
+  ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, 1.05 * u);
+  sketchPoly(ctx, [[hx + f * 1.2 * u, hy - 0.9 * u], [X + f * BIRD_BEAK * u, hy + 0.3 * u],
+                   [hx + f * 1.2 * u, hy + 1.0 * u]], "bird|beak", 0.4, true);
+  sketchPoly(ctx, birdWing(X + 0.6 * u * f, Y - 1.7 * u, a, BIRD_WING * u, f, u,
+                           BIRD_CHORD * u), "bird|near", 0.6, true);
+  ctx.restore();
+}
 
 let partX = SPAWN_X;
 const PART_LAG = 9;
@@ -713,7 +1060,9 @@ function drawGrassBand(step, key, h, n, skip, rank, col) {
     const blades = n + Math.floor(r() * n * 1.25), spread = h * 2.3 + r() * h * 2.9;
     for (let i = 0; i < blades; i++) {
       const bx = wx + (r() - 0.5) * spread;
-      const bh = h + r() * h * 0.9, lean = (r() - 0.5) * h * 0.83 + grassPart(bx, bh);
+      const bh = h + r() * h * 0.9,
+          lean = (r() - 0.5) * h * 0.83 + grassPart(bx, bh) +
+                 windNow(bx) * WIND_GRASS * Math.min(1, bh / 30);
       sketchPoly(ctx, [[sx(bx), sy(0)],
                        [sx(bx + lean * 0.35), sy(-bh * 0.62)],
                        [sx(bx + lean), sy(-bh)]], k + "|" + i, 0.9, false);
@@ -763,6 +1112,7 @@ function drawHair(cx, kind, X, hy, r, sway, face) {
   }
 }
 
+const ARM_OUT = 10, ARM_DROP = 21;
 function handAnchor(X, G, u, phase, armUp) {
   const bob = Math.abs(Math.sin(phase)) * 1.5 * u;
   return { hx: X + Math.sin(phase + Math.PI) * ARM_OUT * u,
@@ -770,19 +1120,28 @@ function handAnchor(X, G, u, phase, armUp) {
 }
 const SHOVEL_UP = 11, SHOVEL_DOWN = 22;
 
-function drawFigure(cx, X, G, u, phase, face, armUp, body, hair, footAt) {
+function drawFigure(cx, X, G, u, phase, face, armUp, body, hair, footAt, bow, idle, grip, reach) {
   const sw = Math.sin(phase), sw2 = Math.sin(phase + Math.PI);
   const bob = Math.abs(Math.sin(phase)) * 1.5 * u;
-  const hipY = G - 24 * u + bob, shY = G - 42 * u + bob, headY = G - 49 * u + bob;
+  const hipY = G - 24 * u + bob;
+
+  const look0 = idle && idle.kind === "lookup" ? idle.amt : 0;
+  const TORSO = 18 * u, NECK = 7 * u, bw = (bow || 0) - 0.26 * look0;
+  const sX = X + Math.sin(bw) * TORSO * face, shY = hipY - Math.cos(bw) * TORSO;
+  const nX = X + Math.sin(bw) * (TORSO + NECK) * face,
+        headY = hipY - Math.cos(bw) * (TORSO + NECK);
   const r = 6 * u;
   cx.strokeStyle = INK; cx.lineWidth = Math.max(1.3, 1.7 * u);
   cx.lineCap = "round"; cx.lineJoin = "round";
 
-  const hX = X + 2.4 * u * face;
-  sketchPoly(cx, ptsEllipse(hX, headY, r, 8.4 * u, 0, 11), "av|head", 1.2, true);
-  drawHair(cx, hair, hX, headY, r, Math.sin(phase * 0.8) * 2.2 * u, face);
+  const look = idle && idle.kind === "lookup" ? idle.amt : 0;
+  const hX = nX + 2.4 * u * face;
+  const hY = headY - 2.2 * u * look;
+  sketchPoly(cx, ptsEllipse(hX, hY, r, 8.4 * u, -0.62 * look * face, 11), "av|head", 1.2, true);
+  drawHair(cx, hair, hX, hY, r, Math.sin(phase * 0.8) * 2.2 * u, face);
 
-  sketchPoly(cx, [[X + 0.6 * u * face, shY + 1 * u], [X + 1.0 * u * face, (shY + hipY) / 2], [X, hipY]], "av|torso", 1.1, false);
+  sketchPoly(cx, [[sX + 0.6 * u * face, shY + 1 * u],
+                  [(X + sX) / 2 + 1.0 * u * face, (shY + hipY) / 2], [X, hipY]], "av|torso", 1.1, false);
 
   const bendK = Math.abs(sw), bendK2 = Math.abs(sw2);
 
@@ -793,9 +1152,27 @@ function drawFigure(cx, X, G, u, phase, face, armUp, body, hair, footAt) {
   sketchPoly(cx, [[X, hipY], [X + (f0x - X) * .5 + kBend * bendK, hipY + (f0y - hipY) * .52], [f0x, f0y]], "av|leg0", 1.1, false);
   sketchPoly(cx, [[X, hipY], [X + sw2 * swing * .5 + kBend * bendK2, hipY + legLen * .52], [X + sw2 * swing, G]], "av|leg1", 1.1, false);
 
-  const aOut = 10 * u, aDrop = 16 * u, eBend = -aDrop * 0.13 * face;
-  sketchPoly(cx, [[X, shY + 1 * u], [X + sw2 * aOut * .5 + eBend * bendK2, shY + aDrop * .52], [X + sw2 * aOut, shY + aDrop + armUp]], "av|arm0", 1.1, false);
-  sketchPoly(cx, [[X, shY + 1 * u], [X + sw  * aOut * .5 + eBend * bendK,  shY + aDrop * .52], [X + sw  * aOut, shY + aDrop]], "av|arm1", 1.1, false);
+  const aOut = ARM_OUT * u, aDrop = ARM_DROP * u, eBend = -aDrop * 0.13 * face;
+
+  let e0 = [sX + sw2 * aOut * .5 + eBend * bendK2, shY + aDrop * .52],
+      h0 = [sX + sw2 * aOut, shY + aDrop + armUp];
+  if (reach) { h0 = [reach.x, reach.y]; e0 = [sX + (reach.x - sX) * 0.45, shY + aDrop * 0.55]; }
+  sketchPoly(cx, [[sX, shY + 1 * u], e0, h0], "av|arm0", 1.1, false);
+
+  let e1 = [sX + sw * aOut * .5 + eBend * bendK, shY + aDrop * .52],
+      h1 = [sX + sw * aOut, shY + aDrop];
+
+  if (grip) {
+    h1 = [grip.x, grip.y];
+    e1 = [sX + (grip.x - sX) * 0.42, shY + aDrop * 1.05];
+  } else if (idle && idle.kind === "scratch" && idle.amt > 0) {
+    const m = idle.amt, fidget = Math.sin(idle.t * 21) * 1.1 * u * m;
+    const tx = hX + r * 0.72 * face + fidget, ty = hY - r * 0.3;
+    h1 = [h1[0] + (tx - h1[0]) * m, h1[1] + (ty - h1[1]) * m];
+    e1 = [e1[0] + (sX + aOut * 1.6 * face - e1[0]) * m,
+          e1[1] + (shY + aDrop * 0.3 - e1[1]) * m];
+  }
+  sketchPoly(cx, [[sX, shY + 1 * u], e1, h1], "av|arm1", 1.1, false);
 
   if (body === "female") {
     const topY = hipY - 3 * u, hemY = hipY + 8 * u, hw = 7.5 * u;
@@ -806,17 +1183,25 @@ function drawFigure(cx, X, G, u, phase, face, armUp, body, hair, footAt) {
                      [X + hw, hemY], [X + hw * .55, (topY + hemY) / 2]], "av|skirt", 1.0);
   }
 
-  return { hx: X + sw2 * aOut, hy: shY + aDrop + armUp };
+  return { hx: h0[0], hy: h0[1] };
 }
 
-const CAN_LIFT = 0, CAN_OUT = 10, CAN_DOWN = 5, CAN_W = 11, CAN_H = 9, ARM_OUT = 10, ARM_DROP = 16;
-const CAN_REACH = 18;
+const CAN_W = 11, CAN_H = 9;
+const CAN_HOLD = CAN_H / 2 + 4;
+const CAN_SIDE = 2;
+
+const POUR_OUT = 13, POUR_H = 26;
+
+const CAN_REACH = 4;
+const BOW_MAX = 0.85;
+function bowAmount() {
+  if (filling <= 0) return 0;
+  const t = 1 - filling / 1.1;
+  return Math.min(1, Math.min(t, 1 - t) / 0.28);
+}
 
 function spoutWorld() {
-  const handX = av.x + Math.sin(av.phase + Math.PI) * ARM_OUT;
-  const handH = (42 - ARM_DROP) + CAN_LIFT;
-  const canX  = handX + CAN_OUT * av.face;
-  const canH  = handH - CAN_DOWN;
+  const canX = av.x + (POUR_OUT + CAN_SIDE) * av.face, canH = POUR_H - CAN_HOLD;
   return { x: canX + (CAN_W / 2 + 7) * av.face, h: canH - CAN_H / 2.5 };
 }
 
@@ -834,17 +1219,63 @@ function drawAvatar() {
     if (press > 0.02) footAt = [bx, by - 3.2 * u, press];
   }
 
+  const upToo = umbrellaUp();
   const hand = drawFigure(ctx, X, G, u, av.phase, av.face,
-                          watering > 0 ? -CAN_LIFT * u : (filling > 0 ? CAN_REACH * u : 0),
-                          S.body, S.hair, footAt);
+                          filling > 0 ? CAN_REACH * u : 0,
+                          S.body, S.hair, footAt, bowAmount() * BOW_MAX, idleAct,
+                          upToo ? umbrellaGrip(X, G, u, av.face) : null,
+                          watering > 0 ? { x: X + POUR_OUT * u * av.face,
+                                           y: G - POUR_H * u } : null);
 
   if (watering > 0 || filling > 0)
-    drawCan(ctx, hand.hx + CAN_OUT * u * av.face, hand.hy + CAN_DOWN * u, u, av.face);
+    drawCan(ctx, hand.hx + CAN_SIDE * u * av.face, hand.hy + CAN_HOLD * u, u, av.face);
+
+  if (upToo) drawUmbrella(ctx, X, G, u, av.face);
   if (planting > 0) drawShovel(ctx, hand.hx, hand.hy, u, av.face, ang);
 
   else if (watering <= 0 && filling <= 0 && S.seeds.length)
 
     drawSeedGlyph(hand.hx, hand.hy + 1.8 * u, u * 0.7, "held|seed", 0.4);
+}
+
+const UMB = { shaft: 10, rimUp: 16, dome: 15, w: 24, gripDown: 5 };
+
+function umbrellaUp() {
+  return raining() && planting <= 0 && watering <= 0 && filling <= 0;
+}
+
+function umbrellaGrip(X, G, u, face) {
+  return { x: X + (UMB.shaft + 4) * u * face, y: G - 49 * u + (UMB.gripDown + 1.5) * u };
+}
+function drawUmbrella(cx, X, G, u, face) {
+  const hy = G - 49 * u;
+  const gx = X + UMB.shaft * u * face;
+  const rimY = hy - UMB.rimUp * u, apexY = rimY - UMB.dome * u, w = UMB.w * u;
+  cx.strokeStyle = INK; cx.lineWidth = Math.max(1.2, 1.5 * u);
+
+  sketchLine(cx, gx, apexY + 1 * u, gx, hy + UMB.gripDown * u, "umb|shaft", 0.9);
+
+  const hy0 = hy + UMB.gripDown * u;
+  sketchPoly(cx, [[gx, hy0], [gx + 2.2 * u * face, hy0 + 2.4 * u],
+                  [gx + 5.2 * u * face, hy0 + 1.8 * u], [gx + 5.8 * u * face, hy0 - 0.8 * u]],
+             "umb|hook", 0.9, false);
+
+  const dome = [];
+  for (let i = 0; i <= 14; i++) {
+    const q = -1 + 2 * i / 14;
+    dome.push([gx + q * w, apexY + UMB.dome * u * q * q]);
+  }
+  sketchPoly(cx, dome, "umb|dome", 0.9, false);
+  sketchLine(cx, gx - w, rimY, gx + w, rimY, "umb|rim", 1.1);
+
+  for (const sgn of [-1, 1]) {
+    const rib = [];
+    for (let i = 0; i <= 7; i++) {
+      const t = i / 7;
+      rib.push([gx + sgn * w * 0.5 * t, apexY + UMB.dome * u * t * t]);
+    }
+    sketchPoly(cx, rib, "umb|rib" + sgn, 0.8, false);
+  }
 }
 
 function drawShovel(cx, X, Y, u, face, ang) {
@@ -894,15 +1325,23 @@ function hintText() {
   if (blocked) return "you can't plant a seed near a tree\u2026";
   if (dry) return "no water\u2026";
 
-  if (S.can <= 0 && S.trees.some(t => !t.watered)) return "I should fill the can";
-  if (!reminded && S.trees.some(t => !t.watered)) return "now it needs water";
+  if (S.can <= 0 && S.trees.some(thirsty)) return "I should fill the can";
+
+  if (justSown) return "now it needs water";
+
+  if ((birdSeed && inView(birdSeed.x)) ||
+      (S.loose || []).some(function (g) { return looseState(g) === "ripe" && inView(g.x); }))
+    return "a bird dropped something…";
   if (S.trees.some(hasRipeSeed)) return "a seed has ripened";
+
+  if (raining()) return "rain…";
   if (S.seeds.length) return "hmm\u2026 where shall I plant the seed?";
   return null;
 }
 
 function drawBubble(txt, alpha) {
-  const u = SCALE, X = sx(av.x), base = sy(0) - 73 * u;
+
+  const u = SCALE, X = sx(av.x), base = sy(0) - (umbrellaUp() ? 92 : 73) * u;
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.font = Math.round(13 * Math.max(1, u)) + "px " + fontFam;
@@ -986,6 +1425,8 @@ function treeLayer(T) {
 
 function onScreen(wx) { return Math.abs(ringDelta(av.x, wx)) < VW / 2 / SCALE + 400; }
 
+function inView(wx) { return Math.abs(ringDelta(av.x, wx)) < VW / 2 / SCALE; }
+
 function draw() {
   if (!S) return;
   ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, VW, VH);
@@ -998,7 +1439,16 @@ function draw() {
     seen.add(T.seed);
     if (puddleT > 0 && T.seed === wetSeed) drawPuddle(T.x, puddleT / PUDDLE_LIFE);
     const L = treeLayer(T);
-    ctx.drawImage(L.cn, sx(T.x - L.ox), sy(-L.oy), L.w, L.h);
+
+    const k = windNow(T.x) * WIND_TREE;
+    if (k) {
+      const bx = sx(T.x), by = sy(0);
+      ctx.save();
+
+      ctx.transform(1, 0, k, 1, -k * by, 0);
+      ctx.drawImage(L.cn, sx(T.x - L.ox), sy(-L.oy), L.w, L.h);
+      ctx.restore();
+    } else ctx.drawImage(L.cn, sx(T.x - L.ox), sy(-L.oy), L.w, L.h);
   }
   for (const k of layers.keys()) if (!seen.has(k)) layers.delete(k);
   if (seedDrop) drawSeedGlyph(sx(seedDrop.x), sy(seedDrop.y), SCALE, "falling|seed",
@@ -1018,6 +1468,16 @@ function draw() {
     if (st) drawSeedGlyph(sx(seedRestX(T)), sy(0) - SEED_RY * SCALE, SCALE,
                           T.seed + "|ripe", 0.07, st === "rotten" ? INK : "#fff");
   }
+
+  for (const g of (S.loose || [])) {
+    if (!onScreen(g.x)) continue;
+    drawSeedGlyph(sx(g.x), sy(0) - SEED_RY * SCALE, SCALE, g.id + "|loose", 0.07,
+                  looseState(g) === "rotten" ? INK : "#fff");
+  }
+  drawBird();
+  if (birdSeed) drawSeedGlyph(sx(birdSeed.x), sy(birdSeed.y), SCALE, "bird|falling", 0.25);
+  const wet = rainNow();
+  if (wet > 0) drawRain(wet);
   if (bubbleT > 0 && bubbleTxt)
     drawBubble(bubbleTxt, Math.min(1, bubbleT / BUBBLE_FADE));
 }
@@ -1025,9 +1485,10 @@ function draw() {
 const REST_PH = 0.30;
 function restPhase() { return Math.round((av.phase - REST_PH) / Math.PI) * Math.PI + REST_PH; }
 function offStance() { return Math.abs(av.phase - restPhase()); }
-function needsLoop() { return Math.abs(av.v) > 0.4 || Math.abs(ringDelta(av.x, targetX)) > 1.5 || keyDir ||
+function needsLoop() { return windLive(nowSec()) || idleAct || raining() || bird || birdSeed ||
+                              Math.abs(av.v) > 0.4 || Math.abs(ringDelta(av.x, targetX)) > 1.5 || keyDir ||
                               watering > 0 || planting > 0 || drops.length || puddleT > 0 ||
-                              blocked > 0 || dry > 0 || filling > 0 || bubbleT > 0 ||
+                              blocked > 0 || dry > 0 || justSown > 0 || filling > 0 || bubbleT > 0 ||
                               Math.abs(ringDelta(partX, av.x)) > 0.4 ||
                               offStance() > 0.02; }
 function wake() { if (raf == null) { lastFrame = performance.now(); raf = requestAnimationFrame(step); } }
@@ -1064,6 +1525,8 @@ function step(now) {
     } else if (pending === "fill") {
       av.face = ringDelta(av.x, SWAMP.x) > 0 ? 1 : -1;
       filling = 1.1;
+    } else if (pending === "take") {
+      takeLoose(actOn);
     } else {
       const i = treeBySeed(actOn);
       if (i >= 0) {
@@ -1078,11 +1541,11 @@ function step(now) {
   }
   if (blocked > 0) blocked = Math.max(0, blocked - dt);
   if (dry > 0) dry = Math.max(0, dry - dt);
+  if (justSown > 0) justSown = Math.max(0, justSown - dt);
   if (filling > 0) {
     filling -= dt;
     if (filling <= 0) {
       filling = 0; S.can = CAN_USES;
-      reminded = S.trees.some(t => !t.watered);
       save();
     }
   }
@@ -1116,6 +1579,7 @@ function step(now) {
                      lastTick: Date.now(), plantedAt: Date.now(), watered: false,
                      nextSeed: SEED_PERIOD, ripeAt: null });
       seedDrop = null; plantSeed = null;
+      justSown = 5;
       lookAt = plantAt;
       save();
     }
@@ -1137,7 +1601,6 @@ function step(now) {
         S.trees[i].moisture = 100;
         S.trees[i].watered = true;
       }
-      reminded = false;
       save();
     }
   }
@@ -1149,19 +1612,51 @@ function step(now) {
   drops = drops.filter(d => d.y < 0);
 
   bubbleTick(dt);
+  idleTick(dt);
+  birdTick(dt);
+  birdSeedTick(dt);
   draw();
   raf = needsLoop() ? requestAnimationFrame(step) : (cancelAnimationFrame(raf), null);
+  if (raf === null) {
+    saveAt();
+    scheduleWind();
+    if (!idleTimer) scheduleIdle(true);
+    if (!rainTimer) scheduleRain();
+    if (!birdTimer) scheduleBird();
+  }
 }
 
 function syncCare() {
-  if (!S || !S.trees.length) return;
+  if (!S) return;
+  if (!S.trees.length) { save(); return; }
   for (let i = 0; i < S.trees.length; i++) S.trees[i] = tick(S.trees[i], Date.now());
   save();
   if (raf == null) draw();
 }
 
+let rainTimer = null;
+function scheduleRain() {
+  clearTimeout(rainTimer); rainTimer = null;
+  if (CALM || !S) return;
+  const g = gameHours(Date.now());
+  let next = null;
+  for (let k = Math.floor(g / RAIN_EVERY); k <= Math.floor(g / RAIN_EVERY) + 2; k++)
+    if (rainSlot(k) > g) { next = rainSlot(k); break; }
+  if (next == null) return;
+
+  rainTimer = setTimeout(function () {
+    rainTimer = null;
+    if (!S) return;
+    syncCare();
+    wake();
+  }, Math.min((next - g) * 3600000 / TIME_SCALE, 2147483000));
+}
+
 setInterval(syncCare, 30000);
-document.addEventListener("visibilitychange", function () { if (!document.hidden) syncCare(); });
+document.addEventListener("visibilitychange", function () {
+
+  if (document.hidden) saveAt(); else syncCare();
+});
 window.addEventListener("focus", syncCare);
 
 cv.addEventListener("mousedown", function (e) {
@@ -1170,11 +1665,20 @@ cv.addEventListener("mousedown", function (e) {
   const wx = toWorldX(px);
   const near = treeNear(wx);
 
-  const lying = py >= sy(-SEED_LIFT) ? seedNear(wx) : -1;
+  const reachable = py >= sy(-SEED_LIFT);
+  const lying = reachable ? seedNear(wx) : -1;
   if (lying >= 0) {
     const T = S.trees[lying];
     targetX = ringWrap(seedRestX(T) + (ringDelta(seedRestX(T), av.x) >= 0 ? 20 : -20));
     actOn = T.seed; pending = "pick";
+    wake(); return;
+  }
+
+  const gift = reachable ? looseNear(wx) : -1;
+  if (gift >= 0) {
+    const g = S.loose[gift];
+    targetX = ringWrap(g.x + (ringDelta(g.x, av.x) >= 0 ? 20 : -20));
+    actOn = g.id; pending = "take";
     wake(); return;
   }
 
@@ -1207,7 +1711,8 @@ cv.addEventListener("mousemove", function (e) {
   if (!S) { cv.style.cursor = "default"; return; }
   const wx = toWorldX(e.clientX), ground = e.clientY >= sy(0);
 
-  const over = (e.clientY >= sy(-SEED_LIFT) && seedNear(wx) >= 0) ||
+  const over = (e.clientY >= sy(-SEED_LIFT) &&
+                (seedNear(wx) >= 0 || looseNear(wx) >= 0)) ||
                (!ground && treeNear(wx) >= 0) ||
                (ground && atSwamp(wx)) ||
                (ground && S.seeds.length > 0 && !tooCloseToTrunk(wx) && !atSwamp(wx));
@@ -1249,6 +1754,7 @@ document.getElementById("dev").addEventListener("click", function (e) {
     if (b.dataset.armed !== "1") { armReset(b); return; }
     disarmReset();
     try { localStorage.removeItem(SAVE_KEY); } catch (err) {}
+    S = null;
     location.reload(); return;
   }
   if (!S.trees.length) return;
@@ -1284,8 +1790,11 @@ function previewSeed() { return seedFrom(pick, "preview"); }
 
 const PV_UNITS_W = 700, PV_UNITS_H = 475;
 function previewSize() {
-  const W = Math.min(Math.round(window.innerWidth * 0.44), 880);
-  const H = Math.min(Math.round(W * PV_UNITS_H / PV_UNITS_W), Math.round(window.innerHeight * 0.82));
+
+  const wide = window.innerWidth > 700;
+  const W = Math.min(Math.round(window.innerWidth * (wide ? 0.44 : 0.86)), 880);
+  const H = Math.min(Math.round(W * PV_UNITS_H / PV_UNITS_W),
+                     Math.round(window.innerHeight * (wide ? 0.82 : 0.34)));
   return { W: W, H: H, sc: Math.min(W / PV_UNITS_W, H / PV_UNITS_H) };
 }
 
@@ -1306,8 +1815,11 @@ function drawPreview() {
 
 const HOME_SEED = "round-straight-dense-one-upright-door";
 function drawHomeTree() {
-  const W = Math.min(Math.round(window.innerWidth * 0.34), 520);
-  const H = Math.min(Math.round(W * PV_UNITS_H / PV_UNITS_W), Math.round(window.innerHeight * 0.34));
+
+  const wide = window.innerWidth > 700;
+  const W = Math.min(Math.round(window.innerWidth * (wide ? 0.34 : 0.72)), 520);
+  const H = Math.min(Math.round(W * PV_UNITS_H / PV_UNITS_W),
+                     Math.round(window.innerHeight * (wide ? 0.34 : 0.26)));
   drawTreeInto(ht, htc, W, H, Math.min(W / PV_UNITS_W, H / PV_UNITS_H), HOME_SEED, "home");
 }
 
@@ -1489,7 +2001,9 @@ if (S) {
   S.body = FIGURE.body; S.hair = FIGURE.hair;
   for (let i = 0; i < S.trees.length; i++) S.trees[i] = tick(S.trees[i], Date.now());
 
-  if (S.trees.length) { av.x = ringWrap(S.trees[0].x - 40); targetX = av.x; }
+  if (S.at != null) { av.x = ringWrap(S.at); }
+  else if (S.trees.length) { av.x = ringWrap(S.trees[0].x - 40); }
+  targetX = av.x;
   save();
   if (hintText()) wake();
 

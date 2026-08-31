@@ -1,4 +1,4 @@
-# Tardywood 🌲✒️
+# Tardywood
 
 > A quiet wood where you grow a tree.
 
@@ -16,7 +16,7 @@ Early days. Feedback welcome.
 
 ## How to play
 
-Two verbs, both of them a short walk:
+Two verbs, both of them a short walk — click, or tap on a phone:
 
 - **Click the ground** — stroll there. Carrying a seed, that plants it.
 - **Click a tree's trunk** — walk over and water it.
@@ -28,7 +28,20 @@ slowly becomes a grove.
 Arrow keys walk too. Nothing needs the keyboard. **`reset`**, in the corner, clears
 everything and starts over — it asks first.
 
-**Desktop browsers, mouse-driven.** Phones aren't a target yet.
+## The wood gets on with things
+
+Gusts come through and the grass leans. Now and then it rains, and the planter puts an
+umbrella up without being asked — but rain is weather, not water. Your trees drink from the
+can, and the can from the swamp. Sometimes a bird crosses carrying a seed from somebody
+else's tree — the only way your wood ever grows a shape you didn't choose. It might let go where you can
+see it, or somewhere you weren't looking; a bird passing with an empty beak means there is
+one lying about. Stand still long enough and the planter will look up at the trees, or
+scratch their head.
+
+None of it needs you. Add **`?calm=1`** to the address if you'd rather everything held still.
+
+**Works on a phone**, though the wood is a wide, low place and a portrait screen is the
+wrong shape for it — turn sideways and you'll see more of it than a desktop shows.
 
 ## Where your wood lives
 
