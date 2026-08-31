@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Tardywood 0.2.4 — MIT — https://github.com/badLama/tardywoodtoy -->
+<!-- Tardywood 0.2.5 — MIT — https://github.com/badLama/tardywoodtoy -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -132,7 +132,7 @@
     data clears the wood, and it will not follow you to another browser.</p>
   <p class="rotate">turn your phone sideways &mdash; the wood is wider than it is tall.</p>
 
-  <div class="foot">v0.2.4 &middot; MIT &middot;
+  <div class="foot">v0.2.5 &middot; MIT &middot;
     <a href="https://github.com/badLama/tardywoodtoy">source</a></div>
 </div>
 
@@ -931,7 +931,13 @@ function idleTick(dt) {
   idleAct.amt = Math.sin(Math.min(1, Math.min(u, 1 - u) / 0.3) * Math.PI / 2);
 }
 
-const BIRD_AFTER = 150, BIRD_GAP = 260;
+const BIRD_MINS_MIN = 10, BIRD_MINS_MAX = 50;
+const BIRD_HOURS = 12;
+const BIRD_MEAN = (BIRD_MINS_MIN + BIRD_MINS_MAX) / 2;
+const BIRD_LADEN = BIRD_MEAN / (BIRD_HOURS * 60);
+function birdWait() {
+  return (BIRD_MINS_MIN + Math.random() * (BIRD_MINS_MAX - BIRD_MINS_MIN)) * 60000;
+}
 
 const BIRD_LEAD = 1.5, BIRD_TRIP = 3.4;
 let bird = null, birdTimer = null;
@@ -944,7 +950,8 @@ function spawnBird() {
            h: Math.max(120, sky * (0.45 + Math.random() * 0.28)),
            flown: 0, cross: span * BIRD_TRIP,
            dropAt: span * BIRD_TRIP * (0.12 + Math.random() * 0.8),
-           seed: strangerSeed(), dropped: false };
+
+           seed: Math.random() < BIRD_LADEN ? strangerSeed() : null, dropped: false };
   wake();
 }
 function scheduleBird() {
@@ -953,14 +960,14 @@ function scheduleBird() {
   birdTimer = setTimeout(function () {
     birdTimer = null;
     if (S) spawnBird();
-  }, (BIRD_AFTER + Math.random() * (BIRD_GAP - BIRD_AFTER)) * 1000);
+  }, birdWait());
 }
 const BIRD_SPEED = 105;
 function birdTick(dt) {
   if (!bird) return;
   bird.flown += BIRD_SPEED * dt;
   bird.x = ringWrap(bird.x + bird.dir * BIRD_SPEED * dt);
-  if (!bird.dropped && bird.flown >= bird.dropAt) {
+  if (bird.seed && !bird.dropped && bird.flown >= bird.dropAt) {
 
     if (tooCloseToTrunk(bird.x) || inSwamp(bird.x)) bird.dropAt = bird.flown + 40;
     else {
@@ -1022,7 +1029,7 @@ function drawBird() {
   sketchShape(ctx, ptsRugby(X, Y, R, 2.2 * u, rot, 7), "bird|body", 0.5);
   sketchShape(ctx, ptsEllipse(hx, hy, 2.2 * u, 2.0 * u, 0, 9), "bird|head", 0.5);
 
-  if (!bird.dropped)
+  if (bird.seed && !bird.dropped)
     drawSeedGlyph(X + f * (BIRD_BEAK + 1.4) * u, hy + 3.2 * u, u * 0.58,
                   "bird|carry", 0.34 * f, "#fff");
 
@@ -1163,8 +1170,13 @@ function drawFigure(cx, X, G, u, phase, face, armUp, body, hair, footAt, bow, id
       h1 = [sX + sw * aOut, shY + aDrop];
 
   if (grip) {
+
     h1 = [grip.x, grip.y];
-    e1 = [sX + (grip.x - sX) * 0.42, shY + aDrop * 1.05];
+    const sh = [sX, shY + 1 * u];
+    const gx = grip.x - sh[0], gy = grip.y - sh[1];
+    const half = aDrop / 2, reach = Math.min(Math.hypot(gx, gy), aDrop * 0.98) / 2;
+    e1 = [sh[0] + gx * 0.5,
+          sh[1] + gy * 0.5 + Math.sqrt(Math.max(0, half * half - reach * reach))];
   } else if (idle && idle.kind === "scratch" && idle.amt > 0) {
     const m = idle.amt, fidget = Math.sin(idle.t * 21) * 1.1 * u * m;
     const tx = hX + r * 0.72 * face + fidget, ty = hY - r * 0.3;
