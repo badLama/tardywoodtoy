@@ -12,7 +12,7 @@ It isn't a wood yet. It's a place where one can grow — and growing takes the t
 takes: two or three days of coming back and watering. That slowness is the toy, not an
 obstacle in front of it.
 
-Early days. Feedback welcome.
+Early days. Feedback welcome, at <tardywood@gmail.com>.
 
 ## How to play
 
