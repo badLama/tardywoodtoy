@@ -1,12 +1,12 @@
 # Tardywood
 
-> A quiet wood where you grow a tree.
+> A quiet place where you grow trees.
 
 Plant a seed, water it, and wander a hand-drawn forest while it grows. **A toy, not a
 game** — no score, no timer, no failure. Trees never die; neglect only stalls them, and
 watering picks up exactly where it left off.
 
-**[Try it →](https://badlama.github.io/tardywoodtoy/)**
+**[Try it →](https://tardywood.com)**
 
 It isn't a wood yet. It's a place where one can grow — and growing takes the time it
 takes: two or three days of coming back and watering. That slowness is the toy, not an

@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <style>
+      :root {
+        --ink: #111111;
+        --leaf: #1eaa2d;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #ffffff;
+          --leaf: #22c55e;
+        }
+      }
+      .leaf {
+        fill: var(--leaf);
+        stroke: var(--ink);
+        stroke-width: 0.9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+
+  <!-- Ground line -->
+  <line x1="6" y1="57" x2="58" y2="57" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" />
+
+  <!-- Grass tufts -->
+  <line x1="15" y1="57" x2="14" y2="52" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round" />
+  <line x1="17" y1="57" x2="18" y2="51" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round" />
+  <line x1="47" y1="57" x2="46" y2="52" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round" />
+  <line x1="49" y1="57" x2="50" y2="51" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round" />
+
+  <!-- Branches -->
+  <line x1="32.00" y1="57.00" x2="32.00" y2="43.66" stroke="var(--ink)" stroke-width="2.48" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="32.00" y1="43.66" x2="26.64" y2="34.35" stroke="var(--ink)" stroke-width="1.61" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="26.64" y1="34.35" x2="20.20" y2="28.61" stroke="var(--ink)" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="20.20" y1="28.61" x2="13.99" y2="26.17" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="13.99" y1="26.17" x2="9.32" y2="25.47" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="13.99" y1="26.17" x2="9.93" y2="22.64" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="20.20" y1="28.61" x2="16.66" y2="23.17" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="16.66" y1="23.17" x2="12.50" y2="19.96" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="16.66" y1="23.17" x2="15.29" y2="18.37" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="26.64" y1="34.35" x2="25.12" y2="26.93" stroke="var(--ink)" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="25.12" y1="26.93" x2="22.19" y2="21.52" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="22.19" y1="21.52" x2="18.79" y2="17.84" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="22.19" y1="21.52" x2="20.94" y2="17.26" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="25.12" y1="26.93" x2="25.44" y2="21.32" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="25.44" y1="21.32" x2="24.18" y2="17.08" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="25.44" y1="21.32" x2="27.22" y2="17.10" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="32.00" y1="43.66" x2="33.03" y2="33.26" stroke="var(--ink)" stroke-width="1.61" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="33.03" y1="33.26" x2="31.23" y2="26.14" stroke="var(--ink)" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="31.23" y1="26.14" x2="28.79" y2="21.40" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="28.79" y1="21.40" x2="25.85" y2="18.42" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="28.79" y1="21.40" x2="28.01" y2="17.57" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="31.23" y1="26.14" x2="30.95" y2="20.20" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="30.95" y1="20.20" x2="29.11" y2="15.86" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="30.95" y1="20.20" x2="32.46" y2="16.11" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="33.03" y1="33.26" x2="36.40" y2="26.30" stroke="var(--ink)" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="36.40" y1="26.30" x2="37.60" y2="20.52" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="37.60" y1="20.52" x2="37.20" y2="15.91" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="37.60" y1="20.52" x2="39.34" y2="16.69" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="36.40" y1="26.30" x2="40.08" y2="22.26" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="40.08" y1="22.26" x2="41.68" y2="18.43" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="40.08" y1="22.26" x2="43.97" y2="20.21" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="32.00" y1="43.66" x2="38.28" y2="35.84" stroke="var(--ink)" stroke-width="1.61" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="38.28" y1="35.84" x2="39.04" y2="28.50" stroke="var(--ink)" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="39.04" y1="28.50" x2="37.85" y2="22.63" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="37.85" y1="22.63" x2="35.79" y2="18.76" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="37.85" y1="22.63" x2="38.10" y2="18.40" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="39.04" y1="28.50" x2="41.06" y2="22.82" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="41.06" y1="22.82" x2="41.48" y2="18.46" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="41.06" y1="22.82" x2="44.25" y2="19.12" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="38.28" y1="35.84" x2="42.54" y2="29.31" stroke="var(--ink)" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="42.54" y1="29.31" x2="44.03" y2="23.39" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="44.03" y1="23.39" x2="43.41" y2="19.09" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="44.03" y1="23.39" x2="46.50" y2="19.82" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="42.54" y1="29.31" x2="46.95" y2="25.47" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="46.95" y1="25.47" x2="49.37" y2="22.00" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="46.95" y1="25.47" x2="50.98" y2="23.66" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="38.28" y1="35.84" x2="45.53" y2="33.25" stroke="var(--ink)" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="45.53" y1="33.25" x2="50.93" y2="30.01" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="50.93" y1="30.01" x2="53.83" y2="26.29" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="50.93" y1="30.01" x2="55.74" y2="28.88" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="45.53" y1="33.25" x2="51.76" y2="32.95" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="51.76" y1="32.95" x2="55.86" y2="31.33" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="51.76" y1="32.95" x2="56.30" y2="34.48" stroke="var(--ink)" stroke-width="0.95" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Leaves -->
+  <ellipse cx="13.59" cy="26.13" rx="2.11" ry="1.49" transform="rotate(-83.3 13.59 26.13)" class="leaf" />
+  <ellipse cx="13.38" cy="25.67" rx="2.58" ry="1.49" transform="rotate(-50.4 13.38 25.67)" class="leaf" />
+  <ellipse cx="7.68" cy="26.27" rx="2.12" ry="1.48" transform="rotate(-115.9 7.68 26.27)" class="leaf" />
+  <ellipse cx="7.24" cy="24.95" rx="2.46" ry="1.31" transform="rotate(-75.9 7.24 24.95)" class="leaf" />
+  <ellipse cx="8.79" cy="24.75" rx="2.12" ry="1.42" transform="rotate(-36.2 8.79 24.75)" class="leaf" />
+  <ellipse cx="8.53" cy="22.50" rx="2.09" ry="1.30" transform="rotate(-84.2 8.53 22.50)" class="leaf" />
+  <ellipse cx="8.71" cy="21.29" rx="2.33" ry="1.42" transform="rotate(-42.0 8.71 21.29)" class="leaf" />
+  <ellipse cx="9.63" cy="20.76" rx="2.60" ry="1.23" transform="rotate(-8.9 9.63 20.76)" class="leaf" />
+  <ellipse cx="15.89" cy="22.66" rx="2.17" ry="1.27" transform="rotate(-56.6 15.89 22.66)" class="leaf" />
+  <ellipse cx="16.55" cy="22.75" rx="2.18" ry="1.36" transform="rotate(-15.2 16.55 22.75)" class="leaf" />
+  <ellipse cx="11.11" cy="19.90" rx="2.31" ry="1.23" transform="rotate(-87.4 11.11 19.90)" class="leaf" />
+  <ellipse cx="10.75" cy="18.83" rx="2.19" ry="1.38" transform="rotate(-57.0 10.75 18.83)" class="leaf" />
+  <ellipse cx="12.07" cy="17.96" rx="2.08" ry="1.30" transform="rotate(-12.0 12.07 17.96)" class="leaf" />
+  <ellipse cx="14.34" cy="17.68" rx="2.16" ry="1.46" transform="rotate(-54.1 14.34 17.68)" class="leaf" />
+  <ellipse cx="14.87" cy="17.12" rx="2.24" ry="1.41" transform="rotate(-18.5 14.87 17.12)" class="leaf" />
+  <ellipse cx="15.86" cy="16.98" rx="2.31" ry="1.26" transform="rotate(22.5 15.86 16.98)" class="leaf" />
+  <ellipse cx="21.90" cy="21.26" rx="2.57" ry="1.36" transform="rotate(-47.7 21.90 21.26)" class="leaf" />
+  <ellipse cx="22.16" cy="20.66" rx="2.15" ry="1.44" transform="rotate(-1.5 22.16 20.66)" class="leaf" />
+  <ellipse cx="17.57" cy="17.84" rx="2.18" ry="1.39" transform="rotate(-90.1 17.57 17.84)" class="leaf" />
+  <ellipse cx="17.62" cy="16.85" rx="2.32" ry="1.44" transform="rotate(-49.8 17.62 16.85)" class="leaf" />
+  <ellipse cx="18.92" cy="15.93" rx="2.20" ry="1.26" transform="rotate(3.8 18.92 15.93)" class="leaf" />
+  <ellipse cx="19.74" cy="16.32" rx="2.60" ry="1.35" transform="rotate(-52.0 19.74 16.32)" class="leaf" />
+  <ellipse cx="20.81" cy="16.49" rx="2.32" ry="1.24" transform="rotate(-9.5 20.81 16.49)" class="leaf" />
+  <ellipse cx="21.24" cy="16.27" rx="2.55" ry="1.20" transform="rotate(16.8 21.24 16.27)" class="leaf" />
+  <ellipse cx="25.21" cy="20.33" rx="2.08" ry="1.44" transform="rotate(-13.4 25.21 20.33)" class="leaf" />
+  <ellipse cx="25.57" cy="21.05" rx="2.42" ry="1.47" transform="rotate(25.4 25.57 21.05)" class="leaf" />
+  <ellipse cx="23.19" cy="16.38" rx="2.26" ry="1.22" transform="rotate(-54.6 23.19 16.38)" class="leaf" />
+  <ellipse cx="23.98" cy="15.81" rx="2.58" ry="1.24" transform="rotate(-9.1 23.98 15.81)" class="leaf" />
+  <ellipse cx="24.58" cy="15.77" rx="2.32" ry="1.24" transform="rotate(17.0 24.58 15.77)" class="leaf" />
+  <ellipse cx="27.02" cy="16.48" rx="2.45" ry="1.33" transform="rotate(-17.4 27.02 16.48)" class="leaf" />
+  <ellipse cx="27.44" cy="16.39" rx="2.10" ry="1.32" transform="rotate(17.3 27.44 16.39)" class="leaf" />
+  <ellipse cx="27.76" cy="16.86" rx="2.46" ry="1.30" transform="rotate(66.0 27.76 16.86)" class="leaf" />
+  <ellipse cx="28.50" cy="21.08" rx="2.56" ry="1.24" transform="rotate(-42.8 28.50 21.08)" class="leaf" />
+  <ellipse cx="28.58" cy="20.27" rx="2.33" ry="1.38" transform="rotate(-10.3 28.58 20.27)" class="leaf" />
+  <ellipse cx="25.05" cy="18.39" rx="2.19" ry="1.20" transform="rotate(-87.6 25.05 18.39)" class="leaf" />
+  <ellipse cx="24.46" cy="17.37" rx="2.55" ry="1.45" transform="rotate(-53.1 24.46 17.37)" class="leaf" />
+  <ellipse cx="25.66" cy="16.36" rx="2.45" ry="1.42" transform="rotate(-5.5 25.66 16.36)" class="leaf" />
+  <ellipse cx="26.99" cy="16.89" rx="2.61" ry="1.45" transform="rotate(-56.2 26.99 16.89)" class="leaf" />
+  <ellipse cx="27.88" cy="16.95" rx="2.22" ry="1.38" transform="rotate(-11.0 27.88 16.95)" class="leaf" />
+  <ellipse cx="28.65" cy="16.68" rx="2.42" ry="1.42" transform="rotate(36.1 28.65 16.68)" class="leaf" />
+  <ellipse cx="30.55" cy="18.82" rx="2.19" ry="1.35" transform="rotate(-16.2 30.55 18.82)" class="leaf" />
+  <ellipse cx="31.02" cy="19.89" rx="2.35" ry="1.18" transform="rotate(12.3 31.02 19.89)" class="leaf" />
+  <ellipse cx="27.49" cy="15.14" rx="2.44" ry="1.44" transform="rotate(-65.9 27.49 15.14)" class="leaf" />
+  <ellipse cx="28.58" cy="14.73" rx="2.55" ry="1.28" transform="rotate(-25.1 28.58 14.73)" class="leaf" />
+  <ellipse cx="29.66" cy="14.07" rx="2.17" ry="1.48" transform="rotate(17.0 29.66 14.07)" class="leaf" />
+  <ellipse cx="31.77" cy="14.67" rx="2.22" ry="1.28" transform="rotate(-25.5 31.77 14.67)" class="leaf" />
+  <ellipse cx="32.69" cy="15.51" rx="2.41" ry="1.20" transform="rotate(21.8 32.69 15.51)" class="leaf" />
+  <ellipse cx="33.39" cy="15.72" rx="2.27" ry="1.22" transform="rotate(67.5 33.39 15.72)" class="leaf" />
+  <ellipse cx="37.49" cy="19.96" rx="2.19" ry="1.26" transform="rotate(-11.1 37.49 19.96)" class="leaf" />
+  <ellipse cx="37.96" cy="19.76" rx="2.44" ry="1.49" transform="rotate(25.4 37.96 19.76)" class="leaf" />
+  <ellipse cx="36.22" cy="15.07" rx="2.60" ry="1.33" transform="rotate(-49.4 36.22 15.07)" class="leaf" />
+  <ellipse cx="37.18" cy="15.08" rx="2.43" ry="1.21" transform="rotate(-0.9 37.18 15.08)" class="leaf" />
+  <ellipse cx="37.98" cy="14.87" rx="2.10" ry="1.35" transform="rotate(36.7 37.98 14.87)" class="leaf" />
+  <ellipse cx="38.94" cy="15.64" rx="2.55" ry="1.40" transform="rotate(-20.6 38.94 15.64)" class="leaf" />
+  <ellipse cx="39.96" cy="15.34" rx="2.45" ry="1.23" transform="rotate(24.8 39.96 15.34)" class="leaf" />
+  <ellipse cx="40.04" cy="16.24" rx="2.35" ry="1.21" transform="rotate(57.9 40.04 16.24)" class="leaf" />
+  <ellipse cx="40.50" cy="21.54" rx="2.60" ry="1.34" transform="rotate(29.7 40.50 21.54)" class="leaf" />
+  <ellipse cx="40.63" cy="21.98" rx="2.16" ry="1.26" transform="rotate(63.1 40.63 21.98)" class="leaf" />
+  <ellipse cx="41.44" cy="17.81" rx="2.29" ry="1.26" transform="rotate(-21.2 41.44 17.81)" class="leaf" />
+  <ellipse cx="42.24" cy="17.10" rx="2.08" ry="1.22" transform="rotate(23.0 42.24 17.10)" class="leaf" />
+  <ellipse cx="43.36" cy="17.80" rx="2.28" ry="1.40" transform="rotate(69.5 43.36 17.80)" class="leaf" />
+  <ellipse cx="44.72" cy="18.19" rx="2.14" ry="1.51" transform="rotate(20.3 44.72 18.19)" class="leaf" />
+  <ellipse cx="45.58" cy="19.47" rx="2.16" ry="1.50" transform="rotate(65.0 45.58 19.47)" class="leaf" />
+  <ellipse cx="44.77" cy="20.29" rx="2.57" ry="1.39" transform="rotate(95.4 44.77 20.29)" class="leaf" />
+  <ellipse cx="37.68" cy="22.25" rx="2.08" ry="1.21" transform="rotate(-24.0 37.68 22.25)" class="leaf" />
+  <ellipse cx="37.92" cy="22.07" rx="2.16" ry="1.42" transform="rotate(7.0 37.92 22.07)" class="leaf" />
+  <ellipse cx="34.60" cy="18.14" rx="2.26" ry="1.21" transform="rotate(-62.2 34.60 18.14)" class="leaf" />
+  <ellipse cx="35.45" cy="17.97" rx="2.30" ry="1.45" transform="rotate(-23.1 35.45 17.97)" class="leaf" />
+  <ellipse cx="36.13" cy="17.76" rx="2.58" ry="1.49" transform="rotate(19.1 36.13 17.76)" class="leaf" />
+  <ellipse cx="37.42" cy="17.27" rx="2.41" ry="1.24" transform="rotate(-30.9 37.42 17.27)" class="leaf" />
+  <ellipse cx="38.00" cy="16.92" rx="2.20" ry="1.29" transform="rotate(-3.8 38.00 16.92)" class="leaf" />
+  <ellipse cx="38.61" cy="17.72" rx="2.39" ry="1.43" transform="rotate(37.2 38.61 17.72)" class="leaf" />
+  <ellipse cx="41.06" cy="22.01" rx="2.07" ry="1.43" transform="rotate(-0.2 41.06 22.01)" class="leaf" />
+  <ellipse cx="41.60" cy="22.26" rx="2.14" ry="1.46" transform="rotate(43.9 41.60 22.26)" class="leaf" />
+  <ellipse cx="40.78" cy="17.70" rx="2.45" ry="1.25" transform="rotate(-42.6 40.78 17.70)" class="leaf" />
+  <ellipse cx="41.58" cy="17.37" rx="2.18" ry="1.35" transform="rotate(5.5 41.58 17.37)" class="leaf" />
+  <ellipse cx="41.92" cy="18.06" rx="2.09" ry="1.44" transform="rotate(47.9 41.92 18.06)" class="leaf" />
+  <ellipse cx="44.49" cy="17.61" rx="2.44" ry="1.52" transform="rotate(9.1 44.49 17.61)" class="leaf" />
+  <ellipse cx="44.90" cy="18.45" rx="2.59" ry="1.44" transform="rotate(44.3 44.90 18.45)" class="leaf" />
+  <ellipse cx="44.90" cy="19.09" rx="2.40" ry="1.19" transform="rotate(86.8 44.90 19.09)" class="leaf" />
+  <ellipse cx="44.02" cy="22.66" rx="2.41" ry="1.24" transform="rotate(-0.9 44.02 22.66)" class="leaf" />
+  <ellipse cx="44.77" cy="22.46" rx="2.10" ry="1.49" transform="rotate(38.4 44.77 22.46)" class="leaf" />
+  <ellipse cx="42.17" cy="18.06" rx="2.26" ry="1.52" transform="rotate(-50.2 42.17 18.06)" class="leaf" />
+  <ellipse cx="43.29" cy="18.42" rx="2.48" ry="1.46" transform="rotate(-10.5 43.29 18.42)" class="leaf" />
+  <ellipse cx="44.25" cy="17.18" rx="2.37" ry="1.39" transform="rotate(23.7 44.25 17.18)" class="leaf" />
+  <ellipse cx="46.23" cy="18.43" rx="2.30" ry="1.25" transform="rotate(-11.0 46.23 18.43)" class="leaf" />
+  <ellipse cx="47.64" cy="18.37" rx="2.54" ry="1.24" transform="rotate(38.0 47.64 18.37)" class="leaf" />
+  <ellipse cx="47.78" cy="19.66" rx="2.59" ry="1.21" transform="rotate(83.1 47.78 19.66)" class="leaf" />
+  <ellipse cx="47.56" cy="24.62" rx="2.37" ry="1.50" transform="rotate(35.5 47.56 24.62)" class="leaf" />
+  <ellipse cx="47.70" cy="25.08" rx="2.35" ry="1.22" transform="rotate(61.9 47.70 25.08)" class="leaf" />
+  <ellipse cx="49.02" cy="19.88" rx="2.39" ry="1.30" transform="rotate(-9.4 49.02 19.88)" class="leaf" />
+  <ellipse cx="49.87" cy="21.07" rx="2.09" ry="1.49" transform="rotate(28.5 49.87 21.07)" class="leaf" />
+  <ellipse cx="50.17" cy="21.68" rx="2.60" ry="1.23" transform="rotate(68.4 50.17 21.68)" class="leaf" />
+  <ellipse cx="51.75" cy="21.74" rx="2.41" ry="1.27" transform="rotate(21.8 51.75 21.74)" class="leaf" />
+  <ellipse cx="52.20" cy="23.03" rx="2.55" ry="1.26" transform="rotate(62.8 52.20 23.03)" class="leaf" />
+  <ellipse cx="52.21" cy="23.91" rx="2.32" ry="1.27" transform="rotate(101.3 52.21 23.91)" class="leaf" />
+  <ellipse cx="51.41" cy="29.52" rx="2.46" ry="1.37" transform="rotate(44.5 51.41 29.52)" class="leaf" />
+  <ellipse cx="51.73" cy="29.88" rx="2.20" ry="1.38" transform="rotate(80.8 51.73 29.88)" class="leaf" />
+  <ellipse cx="53.68" cy="25.01" rx="2.27" ry="1.18" transform="rotate(-6.8 53.68 25.01)" class="leaf" />
+  <ellipse cx="54.74" cy="25.32" rx="2.56" ry="1.41" transform="rotate(43.0 54.74 25.32)" class="leaf" />
+  <ellipse cx="55.09" cy="25.85" rx="2.12" ry="1.18" transform="rotate(70.6 55.09 25.85)" class="leaf" />
+  <ellipse cx="56.80" cy="27.14" rx="2.46" ry="1.17" transform="rotate(31.2 56.80 27.14)" class="leaf" />
+  <ellipse cx="56.52" cy="28.71" rx="2.32" ry="1.36" transform="rotate(77.6 56.52 28.71)" class="leaf" />
+  <ellipse cx="56.38" cy="29.11" rx="2.09" ry="1.20" transform="rotate(109.8 56.38 29.11)" class="leaf" />
+  <ellipse cx="52.08" cy="32.82" rx="2.46" ry="1.44" transform="rotate(67.7 52.08 32.82)" class="leaf" />
+  <ellipse cx="53.04" cy="33.57" rx="2.23" ry="1.39" transform="rotate(115.7 53.04 33.57)" class="leaf" />
+  <ellipse cx="56.53" cy="30.20" rx="2.36" ry="1.33" transform="rotate(31.0 56.53 30.20)" class="leaf" />
+  <ellipse cx="56.95" cy="30.81" rx="2.35" ry="1.43" transform="rotate(64.6 56.95 30.81)" class="leaf" />
+  <ellipse cx="57.56" cy="32.18" rx="2.26" ry="1.31" transform="rotate(116.4 57.56 32.18)" class="leaf" />
+  <ellipse cx="58.25" cy="33.76" rx="2.24" ry="1.52" transform="rotate(69.7 58.25 33.76)" class="leaf" />
+  <ellipse cx="58.05" cy="34.97" rx="2.45" ry="1.41" transform="rotate(105.7 58.05 34.97)" class="leaf" />
+  <ellipse cx="57.10" cy="35.74" rx="2.41" ry="1.36" transform="rotate(147.9 57.10 35.74)" class="leaf" />
+
+</svg>
