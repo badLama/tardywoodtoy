@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Tardywood 0.3.0 — MIT — https://github.com/badLama/tardywoodtoy — embeds Comic Neue, Copyright 2014 The Comic Neue Project Authors, SIL Open Font License 1.1 -->
+<!-- Tardywood 0.4.0 — MIT — https://github.com/badLama/tardywoodtoy — embeds Comic Neue, Copyright 2014 The Comic Neue Project Authors, SIL Open Font License 1.1 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -49,11 +49,14 @@
   #plant h1  { position: absolute; top: 2.4vh; right: 3vw; margin: 0; z-index: 2;
                font-size: clamp(20px, 1.8vw, 28px); font-weight: normal; letter-spacing: 1px;
                transform: rotate(-1.4deg); }
-  #plant .sub { font-size: clamp(22px, 2.2vw, 32px); color: #555; margin: 0 0 10px;
+
+  #plant .sub { font-size: clamp(22px, 2.2vw, 32px); color: #555;
+                margin: 0 0 10px calc(var(--lbl) + var(--gap));
                 transform: rotate(.6deg); }
   #preview { border: 0; }
   .row { display: flex; gap: var(--gap); align-items: center; font-size: 20px; }
-  .row .lbl { width: var(--lbl); text-align: right; color: #555;
+
+  .row .lbl { flex: 0 0 var(--lbl); text-align: right; color: #555;
               font-size: clamp(16px, 1.35vw, 20px); }
 
   .row > span + span { display: flex; flex-wrap: wrap; gap: var(--gap); }
@@ -107,6 +110,22 @@
   #resetask::before { bottom: -12px; border-top: 12px solid #000; }
   #resetask::after  { bottom: -8px;  border-top: 12px solid #fff; }
 
+  #giftask { position: fixed; left: 50%; bottom: 32vh; display: none; z-index: 3;
+
+             transform: translateX(-50%) rotate(-.8deg); text-align: center;
+             width: min(360px, calc(100vw - 24px));
+             background: #fff; color: #000; border: 2.5px solid #000;
+             border-radius: 15px 10px 17px 12px / 11px 16px 10px 15px;
+             padding: 10px 14px; font-size: 14px; line-height: 1.45; }
+  #giftask > div { display: flex; gap: 8px; justify-content: center; margin-top: 9px; }
+
+  #giftask::before, #giftask::after {
+    content: ""; position: absolute; left: 50%; margin-left: -8px; width: 0; height: 0;
+    border-left: 8px solid transparent; border-right: 8px solid transparent;
+  }
+  #giftask::before { bottom: -12px; border-top: 12px solid #000; }
+  #giftask::after  { bottom: -8px;  border-top: 12px solid #fff; }
+
   @media (max-width: 700px) {
 
     #plant { overflow-y: auto; }
@@ -118,7 +137,7 @@
 
     .row .lbl { flex: 0 0 var(--lbl); }
     #plant h1  { top: 2vh; right: 5vw; font-size: 19px; }
-    #plant .sub { font-size: 21px; }
+    #plant .sub { font-size: 21px; margin-left: 0; }
 
     button { min-height: 44px; padding: 8px 16px; }
     #go { min-height: 52px; margin-left: 0; align-self: flex-start; }
@@ -158,8 +177,9 @@
     data clears the wood, and it will not follow you to another browser.</p>
   <p class="rotate">turn your phone sideways &mdash; the wood is wider than it is tall.</p>
 
-  <div class="foot">v0.3.0 &middot; MIT &middot;
+  <div class="foot">v0.4.0 &middot; MIT &middot;
     <a href="https://github.com/badLama/tardywoodtoy">source</a> &middot;
+
     <a href="mailto:tardywood@gmail.com">tardywood@gmail.com</a></div>
 </div>
 
@@ -174,6 +194,7 @@
       <div class="row"><span class="lbl">trunks</span><span id="opt-trunks"></span></div>
       <div class="row"><span class="lbl">branches</span><span id="opt-habit"></span></div>
       <div class="row"><span class="lbl">crown</span><span id="opt-crown"></span></div>
+      <div class="row"><span class="lbl">bark</span><span id="opt-bark"></span></div>
       <button id="go">take the seed</button>
     </div>
   </div>
@@ -181,6 +202,9 @@
 
 <div id="resetask">Are you sure? It will clear this wood &mdash; every tree, and any seed
   in hand. There is no undo.</div>
+
+<div id="giftask">A bird brought this one. Choose what it grows into?
+  <div><button id="gift-yes">choose the tree</button><button id="gift-no">plant it as it is</button></div></div>
 
 <div id="dev" style="display:none">
   <button data-home="1">main page</button><button data-reset="1">reset</button>
@@ -192,12 +216,27 @@
 const WORLD_H     = 600;
 const GROUND_FRAC = 0.80;
 
-const STAGES      = [0, 4, 16, 48];
-const STAGE_NAME  = ["seed", "sprout", "sapling", "tree"];
+const STAGES      = [0, 4, 16, 48, 264, 840];
+const STAGE_NAME  = ["seed", "sprout", "sapling", "tree", "mature", "ancient"];
 
-const STAGE_DRAIN = [100 / 36, 100 / 28, 100 / 20, 100 / 14];
+const STAGE_DRAIN = [100 / 36, 100 / 28, 100 / 20, 100 / 14, 100 / 12, 100 / 10];
 function drainRate(gh) { return STAGE_DRAIN[stageOf(gh)]; }
 const INK         = "#000";
+const PAPER       = "#fff";
+const OUTLINE     = 1.15;
+
+const MIN_LINE    = 0.12;
+
+const PEN_THIN    = 0.30;
+
+const BARK_MIN    = 7;
+const BARK_AREA   = 190;
+
+const BARK_LEN    = 11;
+const BARK_INK    = 0.9;
+
+const TAPER       = 0.66;
+const TAPER_MIN   = 4;
 const WATER_COL   = "#2563eb";
 
 const fontFam = "'Comic Sans MS', 'Chalkboard SE', 'Segoe Print', 'Comic Neue', cursive, sans-serif";
@@ -215,6 +254,11 @@ const TREE_REACH  = 20;
 const TIME_SCALE = Math.max(1, +(new URLSearchParams(location.search).get("speed") || 1));
 
 const WALK_SPEED  = 58;
+
+const RUN_SPEED   = WALK_SPEED * 2.5;
+const RUN_STRIDE  = 1.6;
+const RUN_LEAN    = 0.1;
+let running = false;
 const LAP_SECONDS = 60;
 const TUFT_STEP   = 70;
 const GRASS_STEP  = 140;
@@ -236,9 +280,11 @@ const CROWN_KINDS = ["dense", "sparse", "broad"];
 const TRUNK_COUNT = ["one", "two"];
 const HABITS      = ["upright", "weeping"];
 
-const AXES  = ["leaf", "trunk", "crown", "trunks", "habit"];
+const BARK_KINDS  = ["furrowed", "smooth", "ringed", "scaly"];
+
+const AXES  = ["leaf", "trunk", "crown", "trunks", "habit", "bark"];
 const KINDS = { leaf: LEAF_KINDS, trunk: TRUNK_KINDS, crown: CROWN_KINDS,
-                trunks: TRUNK_COUNT, habit: HABITS };
+                trunks: TRUNK_COUNT, habit: HABITS, bark: BARK_KINDS };
 
 const LABEL = { leanL: "lean left", leanR: "lean right", one: "1", two: "2",
                 weeping: "willow" };
@@ -285,18 +331,45 @@ function inSwamp(wx) { return swampZone(wx) === -1; }
 const BRINK = 4;
 function atSwamp(wx) { return Math.abs(ringDelta(SWAMP.x, wx)) <= SWAMP.w / 2 + BRINK; }
 
-function sketchPoly(ctx, pts, key, amp, close) {
-  const r = prng(key);
-  ctx.beginPath();
+function wobble(pts, key, amp, close) {
+  const r = prng(key), out = [];
   for (let i = 0; i < pts.length; i++) {
     const edge = (i === 0 || i === pts.length - 1) && !close;
     const j = edge ? 0 : amp;
-    const x = pts[i][0] + (r() - 0.5) * j;
-    const y = pts[i][1] + (r() - 0.5) * j;
-    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    out.push([pts[i][0] + (r() - 0.5) * j, pts[i][1] + (r() - 0.5) * j]);
   }
+  return out;
+}
+function sketchPoly(ctx, pts, key, amp, close) {
+  const w = wobble(pts, key, amp, close);
+  ctx.beginPath();
+  for (let i = 0; i < w.length; i++) i ? ctx.lineTo(w[i][0], w[i][1]) : ctx.moveTo(w[i][0], w[i][1]);
   if (close) ctx.closePath();
   ctx.stroke();
+}
+
+function pen(w, sc) { return Math.min(OUTLINE * sc, w * PEN_THIN); }
+
+function limbPts(g, PX, PY) {
+  const N = 3, pts = [], x1 = PX(g.x1), y1 = PY(g.y1), x2 = PX(g.x2), y2 = PY(g.y2);
+  for (let i = 0; i <= N; i++) { const t = i / N; pts.push([x1 + (x2 - x1) * t, y1 + (y2 - y1) * t]); }
+  return wobble(pts, g.k, 1.5, false);
+}
+
+function taperStroke(cx, pts, wBase, wTip) {
+  const SUB = 4, P = [];
+  for (let i = 0; i + 1 < pts.length; i++)
+    for (let k = 0; k < SUB; k++)
+      P.push([pts[i][0] + (pts[i + 1][0] - pts[i][0]) * k / SUB,
+              pts[i][1] + (pts[i + 1][1] - pts[i][1]) * k / SUB]);
+  P.push(pts[pts.length - 1]);
+  const n = P.length - 1;
+  for (let i = 0; i < n; i++) {
+    const w = wBase + (wTip - wBase) * (i + 0.5) / n;
+    if (w < MIN_LINE) continue;
+    cx.lineWidth = w;
+    cx.beginPath(); cx.moveTo(P[i][0], P[i][1]); cx.lineTo(P[i + 1][0], P[i + 1][1]); cx.stroke();
+  }
 }
 function sketchShape(ctx, pts, key, amp) {
   const r = prng(key);
@@ -387,7 +460,9 @@ function growTree(seed, gh) {
     return out;
   }
 
-  const L = 30 + 300 * (1 - Math.exp(-gh / 25));
+  const aged = 1 - Math.exp(-Math.max(0, gh - STAGES[3]) / 600);
+
+  const L = 30 + 300 * (1 - Math.exp(-gh / 25)) + 390 * aged;
 
   if (gh < STAGES[2]) {
     const bend = (p.trunk === "leanL" || p.trunk === "leanR") ? 0.30 : 0.12;
@@ -424,9 +499,15 @@ function growTree(seed, gh) {
   const open = Math.max(0, Math.min(1, (gh - STAGES[2]) / (STAGES[3] - STAGES[2])));
 
   const raw = 4 + 3 * (gh - STAGES[2]) / (STAGES[3] - STAGES[2]);
-  const maxDepth = Math.min(6, Math.floor(raw));
 
-  const grow = raw >= 7 ? 1 : 0.30 + 0.70 * (raw - Math.floor(raw));
+  const maxDepth = Math.min(6, Math.floor(raw))
+                 + (gh >= STAGES[4] ? 1 : 0) + (gh >= STAGES[5] ? 1 : 0);
+
+  const ring = gh >= STAGES[5] ? (gh - STAGES[5]) / (STAGES[5] - STAGES[4])
+             : gh >= STAGES[4] ? (gh - STAGES[4]) / (STAGES[5] - STAGES[4]) : -1;
+  const grow = ring >= 0 ? 0.30 + 0.70 * Math.min(1, ring)
+             : raw >= 7  ? 1
+                         : 0.30 + 0.70 * (raw - Math.floor(raw));
 
   const settle = 0.46 + 0.54 * Math.min(1, (gh - STAGES[2]) / 10);
   const leaning  = p.trunk === "leanL" || p.trunk === "leanR";
@@ -469,6 +550,8 @@ function growTree(seed, gh) {
     const n = 2 + (r() < 0.22 ? 1 : 0);
     const strand = weeping && depth <= STRAND_AT;
     const kids = strand ? 1 : n;
+
+    const kidWid = kids === 1 ? wid * TAPER : wid / Math.sqrt(kids);
     for (let i = 0; i < kids; i++) {
       const off = (i - (kids - 1) / 2) * spread + (r() - 0.5) * wobble;
       let na = ang + off + lean;
@@ -477,11 +560,12 @@ function growTree(seed, gh) {
 
       const clen = strand ? L * 0.24 * settle * (0.80 + r() * 0.40)
                           : len * (0.70 + r() * 0.12) * (depth === 1 ? grow : 1);
-      branch(x2, y2, na, clen, Math.max(0.9, wid * 0.66), depth - 1, path + "-" + i);
+      branch(x2, y2, na, clen, Math.max(0.9, kidWid), depth - 1, path + "-" + i);
     }
   }
 
-  const baseLen = L * 0.40 * settle, baseWid = Math.max(1.3, L * 0.035 * settle);
+  const baseLen = L * 0.40 * settle,
+        baseWid = Math.max(1.3, L * 0.035 * settle) * (1 + 1.60 * aged);
   for (let i = 0; i < nT; i++) {
     const o = i - (nT - 1) / 2;
     branch(o * 7, 0, o * 0.26, baseLen * (1 - Math.abs(o) * 0.08),
@@ -627,6 +711,8 @@ const DIG_END = 0.62, SOW_END = 0.80;
 let planting = 0, plantAt = 0, seedDrop = null, lookAt = null, sowed = false;
 let plantSeed = null, actOn = null;
 
+let giftAt = null, chooseFor = null;
+
 function treeBySeed(sd) { return S.trees.findIndex(t => t.seed === sd); }
 
 function tick(T, now) {
@@ -694,10 +780,14 @@ function looseNear(wx) {
   }
   return best;
 }
+
+function isGift(sd) { return (S.gifts || []).indexOf(sd) >= 0; }
+function unGift(sd) { const i = (S.gifts || []).indexOf(sd); if (i >= 0) S.gifts.splice(i, 1); }
 function takeLoose(id) {
   const L = S.loose || [], i = L.findIndex(function (g) { return g.id === id; });
   if (i < 0) return;
   S.seeds.push(L[i].seed);
+  (S.gifts || (S.gifts = [])).push(L[i].seed);
   L.splice(i, 1);
   save();
 }
@@ -706,6 +796,13 @@ function tooCloseToTrunk(wx) {
   return S.trees.some(t => Math.abs(ringDelta(t.x, wx)) < PLANT_GAP);
 }
 function plantProgress() { return 1 - planting / PLANT_TIME; }
+
+function startPlant(wx) {
+  const side = ringDelta(av.x, wx) >= 0 ? -DIG_REACH : DIG_REACH;
+  targetX = ringWrap(wx + side); plantAt = wx; plantSeed = S.seeds[0];
+  pending = "plant";
+  wake();
+}
 
 function holeOpen() {
   if (planting <= 0) return 0;
@@ -738,6 +835,7 @@ function resize() {
   cv.style.width = VW + "px"; cv.style.height = VH + "px";
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   SCALE = VH / WORLD_H;
+  if (giftAt != null) placeGift();
   draw();
 }
 function redrawOpenScreen() {
@@ -768,22 +866,80 @@ function drawLeafGlyph(cx, g, X, Y, sc, col, key, droop) {
   } else                          sketchPoly(cx, ptsHeart(X, Y, s * .95, a, 13), key, 1.0, true);
 }
 
-function drawStrokes(cx, strokes, PX, PY, sc, moisture) {
+function drawBark(cx, g, PX, PY, sc, wBase, wTip, kind) {
+  const x1 = PX(g.x1), y1 = PY(g.y1), x2 = PX(g.x2), y2 = PY(g.y2);
+  const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy);
+  if (len < 6) return;
+  const ux = dx / len, uy = dy / len, r = prng(g.k + "|bark");
+  cx.strokeStyle = INK; cx.lineWidth = Math.max(0.7, BARK_INK * sc);
+
+  const dens = kind === "smooth" ? 0.35 : kind === "ringed" ? 0.50
+             : kind === "scaly"  ? 0.60 : 1;
+  const alongTheGrain = kind === "furrowed" || kind === "smooth";
+  const n = Math.round(len * (wBase + wTip) / 2 / BARK_AREA * dens);
+  for (let i = 0; i < n; i++) {
+
+    const t = 0.10 + 0.80 * (i + 0.15 + r() * 0.70) / n;
+
+    const w = wBase + (wTip - wBase) * t;
+    const off = (r() - 0.5) * w * (alongTheGrain ? 0.80 : 0.30);
+    const mx = x1 + dx * t - uy * off, my = y1 + dy * t + ux * off;
+    const key = g.k + "|b" + i;
+    if (kind === "ringed") {
+      const hw = w * (0.28 + r() * 0.17);
+      sketchLine(cx, mx - uy * hw, my + ux * hw, mx + uy * hw, my - ux * hw, key, 1.2);
+    } else if (kind === "scaly") {
+      const hw = w * (0.18 + r() * 0.14), bow = BARK_LEN * sc * 0.30;
+      sketchPoly(cx, [[mx - uy * hw, my + ux * hw],
+                      [mx + ux * bow, my + uy * bow],
+                      [mx + uy * hw, my - ux * hw]], key, 1.0, false);
+    } else {
+      const ln = Math.min(len * 0.16, BARK_LEN * sc * (0.5 + r() * 0.9))
+               * (kind === "smooth" ? 0.55 : 1);
+      sketchLine(cx, mx - ux * ln / 2, my - uy * ln / 2,
+                     mx + ux * ln / 2, my + uy * ln / 2, key, 1.2);
+    }
+  }
+}
+
+function drawStrokes(cx, strokes, PX, PY, sc, moisture, bark) {
   const col = LEAF_COL;
 
   const droop = (1 - Math.max(0, Math.min(1, moisture / 60))) * 0.55;
+
+  cx.save();
+  cx.beginPath(); cx.rect(-1e4, -1e4, 2e4, PY(0) + 1e4); cx.clip();
+
   cx.lineCap = "round"; cx.lineJoin = "round";
-  for (const g of strokes) {
-    if (g.t === "line") {
-      cx.strokeStyle = INK; cx.lineWidth = Math.max(1.1, g.w * sc);
-      sketchLine(cx, PX(g.x1), PY(g.y1), PX(g.x2), PY(g.y2), g.k, 1.5);
-    } else if (g.t === "curve") {
-      cx.strokeStyle = INK; cx.lineWidth = Math.max(1.1, g.w * sc);
-      sketchPoly(cx, g.pts.map(p => [PX(p[0]), PY(p[1])]), g.k, 1.3, false);
-    } else if (g.t === "leaf") {
-      drawLeafGlyph(cx, g, PX(g.x), PY(g.y), sc, col, g.k, droop);
+
+  const paint = (g, wBase, wTip) => {
+    if (g.t === "line" && wBase >= TAPER_MIN) return taperStroke(cx, limbPts(g, PX, PY), wBase, wTip);
+    cx.lineWidth = wBase;
+    if (g.t === "line") sketchLine(cx, PX(g.x1), PY(g.y1), PX(g.x2), PY(g.y2), g.k, 1.5);
+    else                sketchPoly(cx, g.pts.map(p => [PX(p[0]), PY(p[1])]), g.k, 1.3, false);
+  };
+
+  for (let pass = 0; pass < 2; pass++) {
+    cx.strokeStyle = pass ? PAPER : INK;
+    for (const g of strokes) {
+      if (g.t === "leaf") continue;
+      const full = Math.max(1.1, g.w * sc), tip = full * TAPER;
+      const wBase = pass ? full - 2 * pen(full, sc) : full;
+      const wTip  = pass ? tip  - 2 * pen(tip,  sc) : tip;
+      if (wBase < MIN_LINE) continue;
+      paint(g, wBase, wTip);
     }
   }
+  for (const g of strokes)
+    if (g.t === "line") {
+      const full = Math.max(1.1, g.w * sc), tip = full * TAPER;
+      const hb = full - 2 * pen(full, sc), ht = tip - 2 * pen(tip, sc);
+      if (hb >= BARK_MIN) drawBark(cx, g, PX, PY, sc, hb, ht, bark);
+    }
+
+  for (const g of strokes)
+    if (g.t === "leaf") drawLeafGlyph(cx, g, PX(g.x), PY(g.y), sc, col, g.k, droop);
+  cx.restore();
 }
 
 function drawHole(wx, t) {
@@ -958,12 +1114,15 @@ function idleTick(dt) {
   idleAct.amt = Math.sin(Math.min(1, Math.min(u, 1 - u) / 0.3) * Math.PI / 2);
 }
 
-const BIRD_MINS_MIN = 10, BIRD_MINS_MAX = 50;
-const BIRD_HOURS = 12;
-const BIRD_MEAN = (BIRD_MINS_MIN + BIRD_MINS_MAX) / 2;
-const BIRD_LADEN = BIRD_MEAN / (BIRD_HOURS * 60);
+const BIRD_SECS_MIN = 50, BIRD_SECS_MAX = 70;
+const BIRD_LADEN = 0.10;
+
+function giftOut() {
+  return !!birdSeed || (S.gifts || []).length > 0 ||
+         (S.loose || []).some(function (g) { return looseState(g) === "ripe"; });
+}
 function birdWait() {
-  return (BIRD_MINS_MIN + Math.random() * (BIRD_MINS_MAX - BIRD_MINS_MIN)) * 60000;
+  return (BIRD_SECS_MIN + Math.random() * (BIRD_SECS_MAX - BIRD_SECS_MIN)) * 1000;
 }
 
 const BIRD_LEAD = 1.5, BIRD_TRIP = 3.4;
@@ -978,7 +1137,9 @@ function spawnBird() {
            flown: 0, cross: span * BIRD_TRIP,
            dropAt: span * BIRD_TRIP * (0.12 + Math.random() * 0.8),
 
-           seed: Math.random() < BIRD_LADEN ? strangerSeed() : null, dropped: false };
+           seed: !giftOut() && Math.random() < BIRD_LADEN ? strangerSeed() : null,
+           dropped: false };
+  scheduleBird();
   wake();
 }
 function scheduleBird() {
@@ -986,7 +1147,9 @@ function scheduleBird() {
   if (CALM) return;
   birdTimer = setTimeout(function () {
     birdTimer = null;
-    if (S) spawnBird();
+    if (!S) return;
+    if (bird) return scheduleBird();
+    spawnBird();
   }, birdWait());
 }
 const BIRD_SPEED = 105;
@@ -1003,7 +1166,7 @@ function birdTick(dt) {
                    seed: bird.seed };
     }
   }
-  if (bird.flown >= bird.cross) { bird = null; scheduleBird(); }
+  if (bird.flown >= bird.cross) bird = null;
 }
 
 let birdSeed = null;
@@ -1261,7 +1424,7 @@ function drawAvatar() {
   const upToo = umbrellaUp();
   const hand = drawFigure(ctx, X, G, u, av.phase, av.face,
                           filling > 0 ? CAN_REACH * u : 0,
-                          S.body, S.hair, footAt, bowAmount() * BOW_MAX, idleAct,
+                          S.body, S.hair, footAt, bowAmount() * BOW_MAX + runLean(), idleAct,
                           upToo ? umbrellaGrip(X, G, u, av.face) : null,
                           watering > 0 ? { x: X + POUR_OUT * u * av.face,
                                            y: G - POUR_H * u } : null);
@@ -1361,6 +1524,8 @@ function drawPuddle(wx, frac) {
 
 function hintText() {
   if (!S || planting > 0 || watering > 0 || filling > 0) return null;
+
+  if (giftAt != null) return null;
   if (blocked) return "you can't plant a seed near a tree\u2026";
   if (dry) return "no water\u2026";
 
@@ -1448,14 +1613,18 @@ function treeLayer(T) {
       minY = Math.min(minY, s.y); maxY = Math.max(maxY, s.y);
     }
   }
+
+  minY = Math.max(minY, -(VH * GROUND_FRAC / SCALE + PAD));
   const ox = PAD - minX, oy = PAD - minY;
   const w = (maxX - minX + PAD * 2) * SCALE, h = (maxY - minY + PAD * 2) * SCALE;
-  const dpr = window.devicePixelRatio || 1;
+
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
   const cn = document.createElement("canvas");
   cn.width = Math.max(1, Math.ceil(w * dpr)); cn.height = Math.max(1, Math.ceil(h * dpr));
   const c2 = cn.getContext("2d");
   c2.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawStrokes(c2, strokes, wx => (wx + ox) * SCALE, wy => (wy + oy) * SCALE, SCALE, T.moisture);
+  drawStrokes(c2, strokes, wx => (wx + ox) * SCALE, wy => (wy + oy) * SCALE, SCALE, T.moisture,
+              parseSeed(T.seed).bark);
 
   const L = { key: key, cn: cn, ox: ox, oy: oy, w: w, h: h };
   layers.set(T.seed, L);
@@ -1522,6 +1691,10 @@ function draw() {
 }
 
 const REST_PH = 0.30;
+
+function runLean() {
+  return Math.max(0, (Math.abs(av.v) - WALK_SPEED) / (RUN_SPEED - WALK_SPEED)) * RUN_LEAN;
+}
 function restPhase() { return Math.round((av.phase - REST_PH) / Math.PI) * Math.PI + REST_PH; }
 function offStance() { return Math.abs(av.phase - restPhase()); }
 function needsLoop() { return windLive(nowSec()) || idleAct || raining() || bird || birdSeed ||
@@ -1542,8 +1715,10 @@ function frame(now) {
 
   if (keyDir) targetX = ringWrap(av.x + keyDir * 150);
   const dx = ringDelta(av.x, targetX);
-  av.v = Math.max(-WALK_SPEED, Math.min(WALK_SPEED, dx * 2.4));
-  if (Math.abs(dx) < 1.2) av.v = 0;
+  const top = running ? RUN_SPEED : WALK_SPEED;
+  av.v = Math.max(-top, Math.min(top, dx * 2.4));
+
+  if (Math.abs(dx) < 1.2) { av.v = 0; running = false; }
 
   if (av.v && watering <= 0 && planting <= 0 && filling <= 0) av.face = av.v > 0 ? 1 : -1;
   av.x = ringWrap(av.x + av.v * dt);
@@ -1551,7 +1726,7 @@ function frame(now) {
   const pd = ringDelta(partX, av.x);
   partX = Math.abs(pd) > 120 ? av.x : ringWrap(partX + pd * Math.min(1, dt * PART_LAG));
 
-  const STEP = 24;
+  const STEP = 24 * (running ? RUN_STRIDE : 1);
   if (Math.abs(av.v) > 0.4) {
     av.phase += Math.abs(av.v) * dt * (Math.PI / STEP);
   } else {
@@ -1619,6 +1794,7 @@ function frame(now) {
 
       const k = S.seeds.indexOf(plantSeed);
       if (k >= 0) S.seeds.splice(k, 1);
+      unGift(plantSeed);
       S.trees.push({ seed: plantSeed, x: plantAt, growthHours: 0, moisture: 0,
                      lastTick: Date.now(), plantedAt: Date.now(), watered: false,
                      nextSeed: SEED_PERIOD, ripeAt: null });
@@ -1704,7 +1880,8 @@ document.addEventListener("visibilitychange", function () {
 window.addEventListener("focus", syncCare);
 
 cv.addEventListener("mousedown", function (e) {
-  if (!S) return;
+  if (!S || giftAt != null) return;
+  running = false;
   const px = e.clientX, py = e.clientY;
   const wx = toWorldX(px);
   const near = treeNear(wx);
@@ -1743,12 +1920,17 @@ cv.addEventListener("mousedown", function (e) {
   if (py >= sy(0) && S.seeds.length) {
     if (tooCloseToTrunk(wx)) { blocked = 2.5; wake(); return; }
 
-    const side = ringDelta(av.x, wx) >= 0 ? -DIG_REACH : DIG_REACH;
-    targetX = ringWrap(wx + side); plantAt = wx; plantSeed = S.seeds[0];
-    pending = "plant";
-    wake(); return;
+    if (isGift(S.seeds[0])) { askGift(wx); return; }
+    startPlant(wx);
+    return;
   }
   targetX = wx; pending = null;
+  wake();
+});
+
+cv.addEventListener("dblclick", function () {
+  if (!S || giftAt != null) return;
+  running = true;
   wake();
 });
 cv.addEventListener("mousemove", function (e) {
@@ -1805,6 +1987,8 @@ document.getElementById("dev").addEventListener("click", function (e) {
     S = null;
     location.reload(); return;
   }
+
+  if (b.dataset.wet) { for (const t of S.trees) t.moisture = 100; save(); draw(); return; }
   if (!S.trees.length) return;
   for (let i = 0; i < S.trees.length; i++) {
     S.trees[i].lastTick -= (+b.dataset.h) * 3600000 / TIME_SCALE;
@@ -1813,7 +1997,8 @@ document.getElementById("dev").addEventListener("click", function (e) {
   save(); draw();
 });
 
-const pick = { leaf: "round", trunk: "gnarled", crown: "dense", trunks: "one", habit: "upright" };
+const pick = { leaf: "round", trunk: "gnarled", crown: "dense", trunks: "one",
+               habit: "upright", bark: "furrowed" };
 
 const FIGURE = { body: "male", hair: "none" };
 const pv = document.getElementById("preview"), pvc = pv.getContext("2d");
@@ -1837,16 +2022,18 @@ function buildOpts(id, kinds, obj, key, after) {
 function previewSeed() { return seedFrom(pick, "preview"); }
 
 const PV_UNITS_W = 700, PV_UNITS_H = 475;
+
+const PICK_GH = 840, PICK_UNITS_W = 1360, PICK_UNITS_H = 1060;
 function previewSize() {
 
   const wide = window.innerWidth > 700;
   const W = Math.min(Math.round(window.innerWidth * (wide ? 0.44 : 0.86)), 880);
-  const H = Math.min(Math.round(W * PV_UNITS_H / PV_UNITS_W),
+  const H = Math.min(Math.round(W * PICK_UNITS_H / PICK_UNITS_W),
                      Math.round(window.innerHeight * (wide ? 0.82 : 0.34)));
-  return { W: W, H: H, sc: Math.min(W / PV_UNITS_W, H / PV_UNITS_H) };
+  return { W: W, H: H, sc: Math.min(W / PICK_UNITS_W, H / PICK_UNITS_H) };
 }
 
-function drawTreeInto(cn, cx, W, H, sc, seed, key) {
+function drawTreeInto(cn, cx, W, H, sc, seed, key, gh) {
   const dpr = window.devicePixelRatio || 1, gy = H - 10;
   cn.width = W * dpr; cn.height = H * dpr;
   cn.style.width = W + "px"; cn.style.height = H + "px";
@@ -1854,11 +2041,12 @@ function drawTreeInto(cn, cx, W, H, sc, seed, key) {
   cx.fillStyle = "#fff"; cx.fillRect(0, 0, W, H);
   cx.strokeStyle = INK; cx.lineWidth = Math.max(1.4, sc * 1.3);
   sketchLine(cx, 6, gy, W - 6, gy, key + "|ground", 1.8);
-  drawStrokes(cx, growTree(seed, 48), wx => W / 2 + wx * sc, wy => gy + wy * sc, sc, 100);
+  drawStrokes(cx, growTree(seed, gh), wx => W / 2 + wx * sc, wy => gy + wy * sc, sc, 100,
+              parseSeed(seed).bark);
 }
 function drawPreview() {
   const z = previewSize();
-  drawTreeInto(pv, pvc, z.W, z.H, z.sc, previewSeed(), "pv");
+  drawTreeInto(pv, pvc, z.W, z.H, z.sc, previewSeed(), "pv", PICK_GH);
 }
 
 const HOME_SEED = "round-straight-dense-one-upright-door";
@@ -1868,7 +2056,8 @@ function drawHomeTree() {
   const W = Math.min(Math.round(window.innerWidth * (wide ? 0.34 : 0.72)), 520);
   const H = Math.min(Math.round(W * PV_UNITS_H / PV_UNITS_W),
                      Math.round(window.innerHeight * (wide ? 0.34 : 0.26)));
-  drawTreeInto(ht, htc, W, H, Math.min(W / PV_UNITS_W, H / PV_UNITS_H), HOME_SEED, "home");
+
+  drawTreeInto(ht, htc, W, H, Math.min(W / PV_UNITS_W, H / PV_UNITS_H), HOME_SEED, "home", 48);
 }
 
 const homeEl = document.getElementById("home"), plantEl = document.getElementById("plant"),
@@ -1896,7 +2085,38 @@ soloEl.onclick = function () {
 
 soloEl.disabled = false;
 
+const giftEl = document.getElementById("giftask");
+
+function placeGift() {
+  giftEl.style.bottom = (VH - (sy(0) - (umbrellaUp() ? 92 : 73) * SCALE)) + "px";
+}
+function askGift(wx) {
+  giftAt = wx;
+  placeGift();
+  giftEl.style.display = "block";
+  wake();
+}
+document.getElementById("gift-no").onclick = function () {
+  giftEl.style.display = "none";
+  startPlant(giftAt); giftAt = null;
+};
+document.getElementById("gift-yes").onclick = function () {
+  giftEl.style.display = "none";
+  chooseFor = S.seeds[0];
+  devEl.style.display = "none"; plantEl.style.display = "";
+  drawPreview();
+};
+
 document.getElementById("go").onclick = function () {
+  if (chooseFor) {
+
+    const i = S.seeds.indexOf(chooseFor);
+    if (i >= 0) S.seeds[i] = seedFrom(pick, parseSeed(chooseFor).salt);
+    unGift(chooseFor); chooseFor = null;
+    save(); enterWorld(); resize();
+    if (giftAt != null) { startPlant(giftAt); giftAt = null; }
+    return;
+  }
   S = { body: FIGURE.body, hair: FIGURE.hair, speed: TIME_SCALE, can: CAN_USES,
         seeds: [seedFrom(pick, freshSalt())], trees: [] };
   save();
@@ -1935,6 +2155,14 @@ function demo() {
   ok("legacy seed keeps its axes", lg.leaf === "round" && lg.trunk === "gnarled" &&
      lg.crown === "dense" && lg.trunks === "one" && lg.habit === "upright" && lg.salt === "a7f3");
   ok("legacy 'leaning' still leans right", parseSeed("oval-leaning-sparse-zz12").trunk === "leanR");
+
+  const old5 = parseSeed("round-gnarled-dense-one-upright-a7f3");
+  ok("a seed written before bark existed still reads",
+     old5.bark === BARK_KINDS[0] && old5.salt === "a7f3" &&
+     old5.habit === "upright" && old5.leaf === "round");
+  ok("bark survives a round trip",
+     parseSeed(seedFrom({ leaf: "oval", trunk: "straight", crown: "broad", trunks: "two",
+                          habit: "weeping", bark: "ringed" }, "z9")).bark === "ringed");
   ok("single trunk still keys on path 0",
      growTree("round-gnarled-dense-a7f3", 48).some(s => s.k === "round-gnarled-dense-a7f3|0"));
 
@@ -1946,6 +2174,50 @@ function demo() {
      hangs("round-straight-dense-one-weeping-q1", "round-straight-dense-one-upright-q1") &&
      hangs("blade-gnarled-sparse-two-weeping-q1", "blade-gnarled-sparse-two-upright-q1"));
   ok("nonsense seed still grows something", growTree("!!-??-@@-zz", 48).length > 0);
+
+  const keepB = birdSeed, keepG = S;
+  birdSeed = null; S = { gifts: [], loose: [] };
+  ok("a bird carries when the ground is clear", !giftOut());
+  S.loose = [{ x: 0, seed: "a-b-c-q", at: Date.now(), id: "q" }];
+  ok("...but not while a ripe one lies there", giftOut());
+  S.loose[0].at = Date.now() - (SEED_LIFE_H + 1) * 3600000 / TIME_SCALE;
+  ok("...and carries again once it has rotted", !giftOut());
+  S.loose = []; S.gifts = ["a-b-c-q"];
+  ok("...nor while one is in hand, unplanted", giftOut());
+  S.gifts = []; birdSeed = { x: 0, y: -50, v: 0, seed: "a-b-c-q" };
+  ok("...nor while one is still falling", giftOut());
+  birdSeed = keepB; S = keepG;
+
+  const keepV = av.v;
+  av.v = WALK_SPEED;   ok("no lean at walking pace", runLean() === 0);
+  av.v = -RUN_SPEED;   ok("a full lean at a full run", Math.abs(runLean() - RUN_LEAN) < 1e-9);
+  av.v = (WALK_SPEED + RUN_SPEED) / 2;
+  ok("and half of it half way there", Math.abs(runLean() - RUN_LEAN / 2) < 1e-9);
+  av.v = keepV;
+
+  ok("a run is faster AND longer-strided", RUN_SPEED > WALK_SPEED && RUN_STRIDE > 1 &&
+     RUN_SPEED / (24 * RUN_STRIDE) < 4);
+
+  ok("a bird sets off every 50-70 real seconds", (function () {
+    let lo = Infinity, hi = 0;
+    for (let i = 0; i < 400; i++) { const w = birdWait(); lo = Math.min(lo, w); hi = Math.max(hi, w); }
+    return lo >= 50000 && hi <= 70000 && hi - lo > 15000;
+  })());
+
+  const keepS = S;
+  S = { seeds: ["oval-straight-broad-one-upright-x1", "oval-straight-broad-one-upright-x2"],
+        gifts: ["oval-straight-broad-one-upright-x2"] };
+  ok("only a bird's seed asks", !isGift(S.seeds[0]) && isGift(S.seeds[1]));
+  unGift(S.seeds[1]);
+  ok("planting a gift clears its mark",
+     !isGift("oval-straight-broad-one-upright-x2") && S.gifts.length === 0);
+  S = { seeds: [] };
+  ok("a save written before birds asks nothing", !isGift("oval-straight-broad-one-upright-x2"));
+  S = keepS;
+
+  ok("a re-chosen gift keeps its salt",
+     parseSeed(seedFrom(pick, parseSeed("oval-straight-broad-two-weeping-b3k9").salt)).salt
+     === "b3k9");
 
   const old = { seed: "round-gnarled-dense-a7f3", treeX: 230, growthHours: 30, moisture: 55,
                 watered: true, lastTick: 1, plantedAt: 1, speed: 1 };
@@ -2046,6 +2318,13 @@ function demo() {
   }
   ok("watered run reaches stage 3", stageOf(s.growthHours) === 3 && Math.abs(s.growthHours - 48) < 1e-9);
 
+  ok("every stage has a drain rate",
+     STAGE_DRAIN.length === STAGES.length && STAGE_DRAIN.every(r => r > 0));
+
+  ok("a tree still grows past stage 3",
+     growTree("round-gnarled-dense-one-upright-t", STAGES[5]).length >
+     growTree("round-gnarled-dense-one-upright-t", STAGES[3]).length);
+
   console.log(fails.length ? "%cTardywood self-check FAILED: " + fails.join(", ")
                            : "%cTardywood self-check ok (" + count + ")",
               "color:" + (fails.length ? "#b00" : "#3a3"));
@@ -2057,6 +2336,7 @@ buildOpts("opt-trunk",  TRUNK_KINDS, pick, "trunk",  drawPreview);
 buildOpts("opt-trunks", TRUNK_COUNT, pick, "trunks", drawPreview);
 buildOpts("opt-crown",  CROWN_KINDS, pick, "crown",  drawPreview);
 buildOpts("opt-habit",  HABITS,      pick, "habit",  drawPreview);
+buildOpts("opt-bark",   BARK_KINDS,  pick, "bark",   drawPreview);
 
 S = load();
 if (S) {
