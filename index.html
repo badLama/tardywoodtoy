@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Tardywood 0.4.0 — MIT — https://github.com/badLama/tardywoodtoy — embeds Comic Neue, Copyright 2014 The Comic Neue Project Authors, SIL Open Font License 1.1 -->
+<!-- Tardywood 0.4.1 — MIT — https://github.com/badLama/tardywoodtoy — embeds Comic Neue, Copyright 2014 The Comic Neue Project Authors, SIL Open Font License 1.1 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -177,7 +177,7 @@
     data clears the wood, and it will not follow you to another browser.</p>
   <p class="rotate">turn your phone sideways &mdash; the wood is wider than it is tall.</p>
 
-  <div class="foot">v0.4.0 &middot; MIT &middot;
+  <div class="foot">v0.4.1 &middot; MIT &middot;
     <a href="https://github.com/badLama/tardywoodtoy">source</a> &middot;
 
     <a href="mailto:tardywood@gmail.com">tardywood@gmail.com</a></div>
@@ -673,6 +673,8 @@ function load() {
 function migrate(s) {
 
   if (s.can == null) s.can = CAN_USES;
+
+  if (s.trees) s.trees = s.trees.filter(t => t && typeof t.seed === "string");
   if (s.trees) return;
   s.trees = s.treeX == null ? [] : [{
     seed: s.seed, x: ringWrap(s.treeX), growthHours: s.growthHours || 0,
@@ -698,6 +700,8 @@ let blocked = 0;
 
 const CAN_USES = 3;
 let dry = 0;
+
+let full = 0;
 let filling = 0;
 
 let justSown = 0;
@@ -1528,15 +1532,17 @@ function hintText() {
   if (giftAt != null) return null;
   if (blocked) return "you can't plant a seed near a tree\u2026";
   if (dry) return "no water\u2026";
+  if (full) return "I already have one\u2026";
 
   if (S.can <= 0 && S.trees.some(thirsty)) return "I should fill the can";
 
   if (justSown) return "now it needs water";
 
-  if ((birdSeed && inView(birdSeed.x)) ||
-      (S.loose || []).some(function (g) { return looseState(g) === "ripe" && inView(g.x); }))
+  const handFree = !S.seeds.length;
+  if (handFree && ((birdSeed && inView(birdSeed.x)) ||
+      (S.loose || []).some(function (g) { return looseState(g) === "ripe" && inView(g.x); })))
     return "a bird dropped something…";
-  if (S.trees.some(hasRipeSeed)) return "a seed has ripened";
+  if (handFree && S.trees.some(hasRipeSeed)) return "a seed has ripened";
 
   if (raining()) return "rain…";
   if (S.seeds.length) return "hmm\u2026 where shall I plant the seed?";
@@ -1700,7 +1706,7 @@ function offStance() { return Math.abs(av.phase - restPhase()); }
 function needsLoop() { return windLive(nowSec()) || idleAct || raining() || bird || birdSeed ||
                               Math.abs(av.v) > 0.4 || Math.abs(ringDelta(av.x, targetX)) > 1.5 || keyDir ||
                               watering > 0 || planting > 0 || drops.length || puddleT > 0 ||
-                              blocked > 0 || dry > 0 || justSown > 0 || filling > 0 || bubbleT > 0 ||
+                              blocked > 0 || dry > 0 || full > 0 || justSown > 0 || filling > 0 || bubbleT > 0 ||
                               Math.abs(ringDelta(partX, av.x)) > 0.4 ||
                               offStance() > 0.02; }
 function wake() { if (raf == null) { lastFrame = performance.now(); raf = requestAnimationFrame(step); } }
@@ -1745,12 +1751,12 @@ function frame(now) {
       av.face = ringDelta(av.x, SWAMP.x) > 0 ? 1 : -1;
       filling = 1.1;
     } else if (pending === "take") {
-      takeLoose(actOn);
+      if (S.seeds.length) full = 2.5; else takeLoose(actOn);
     } else {
       const i = treeBySeed(actOn);
       if (i >= 0) {
         av.face = ringDelta(av.x, S.trees[i].x) > 0 ? 1 : -1;
-        if (pending === "pick") pickSeed(i);
+        if (pending === "pick") { if (S.seeds.length) full = 2.5; else pickSeed(i); }
 
         else if (S.can > 0) { watering = 1.5; wetSeed = actOn; }
         else { dry = 2.5; }
@@ -1760,6 +1766,7 @@ function frame(now) {
   }
   if (blocked > 0) blocked = Math.max(0, blocked - dt);
   if (dry > 0) dry = Math.max(0, dry - dt);
+  if (full > 0) full = Math.max(0, full - dt);
   if (justSown > 0) justSown = Math.max(0, justSown - dt);
   if (filling > 0) {
     filling -= dt;
@@ -1795,11 +1802,14 @@ function frame(now) {
       const k = S.seeds.indexOf(plantSeed);
       if (k >= 0) S.seeds.splice(k, 1);
       unGift(plantSeed);
-      S.trees.push({ seed: plantSeed, x: plantAt, growthHours: 0, moisture: 0,
-                     lastTick: Date.now(), plantedAt: Date.now(), watered: false,
-                     nextSeed: SEED_PERIOD, ripeAt: null });
+
+      if (typeof plantSeed === "string") {
+        S.trees.push({ seed: plantSeed, x: plantAt, growthHours: 0, moisture: 0,
+                       lastTick: Date.now(), plantedAt: Date.now(), watered: false,
+                       nextSeed: SEED_PERIOD, ripeAt: null });
+        justSown = 5;
+      }
       seedDrop = null; plantSeed = null;
-      justSown = 5;
       lookAt = plantAt;
       save();
     }
@@ -1879,8 +1889,9 @@ document.addEventListener("visibilitychange", function () {
 });
 window.addEventListener("focus", syncCare);
 
+function handsBusy() { return planting > 0 || watering > 0 || filling > 0; }
 cv.addEventListener("mousedown", function (e) {
-  if (!S || giftAt != null) return;
+  if (!S || giftAt != null || handsBusy()) return;
   running = false;
   const px = e.clientX, py = e.clientY;
   const wx = toWorldX(px);
@@ -1945,6 +1956,7 @@ cv.addEventListener("mousemove", function (e) {
   cv.style.cursor = over ? "pointer" : "default";
 });
 window.addEventListener("keydown", function (e) {
+  if (handsBusy()) return;
   if (e.key === "ArrowLeft")  { keyDir = -1; pending = null; wake(); }
   if (e.key === "ArrowRight") { keyDir =  1; pending = null; wake(); }
 });
@@ -2228,6 +2240,29 @@ function demo() {
      old.seeds.length === 0 && old.treeX === undefined);
   migrate(old);
   ok("migrate is idempotent", old.trees.length === 1 && old.trees[0].growthHours === 30);
+
+  const broken = { can: 2, seeds: ["a-b-c-s1"], trees: [
+    { seed: "round-gnarled-dense-one-upright-ok1", x: 10, growthHours: 90 },
+    { seed: null, x: 40, growthHours: 0 }, { x: 70 },
+    { seed: "round-gnarled-dense-one-upright-ok2", x: 400, growthHours: 5 }] };
+  migrate(broken);
+  ok("a wood with a seedless tree in it loads again",
+     broken.trees.length === 2 && broken.trees.every(t => typeof t.seed === "string") &&
+     broken.trees[0].growthHours === 90 && broken.seeds.length === 1);
+
+  const keepH = { S: S, full: full, blocked: blocked, dry: dry, justSown: justSown,
+                  birdSeed: birdSeed, giftAt: giftAt };
+  const ripeTree = { seed: "round-gnarled-dense-one-upright-rp", x: 0, growthHours: 60,
+                     moisture: 100, ripeAt: Date.now(), nextSeed: 108 };
+  full = 0; blocked = 0; dry = 0; justSown = 0; birdSeed = null; giftAt = null;
+  S = { seeds: [], trees: [ripeTree], loose: [], can: 3 };
+  ok("empty hands notice a ripe seed", hintText() === "a seed has ripened");
+  S.seeds = ["round-gnarled-dense-one-upright-held"];
+  ok("full hands do not", hintText() !== "a seed has ripened");
+  full = 2.5;
+  ok("and say why when they try", hintText() === "I already have one\u2026");
+  S = keepH.S; full = keepH.full; blocked = keepH.blocked; dry = keepH.dry;
+  justSown = keepH.justSown; birdSeed = keepH.birdSeed; giftAt = keepH.giftAt;
   const held = { seed: "oval-straight-sparse-zz12", treeX: null, speed: 1 };
   migrate(held);
   ok("an unplanted save keeps its seed in hand",
