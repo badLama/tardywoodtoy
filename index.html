@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Tardywood 0.4.0 — MIT — https://github.com/badLama/tardywoodtoy — embeds Comic Neue, Copyright 2014 The Comic Neue Project Authors, SIL Open Font License 1.1 -->
+<!-- Tardywood 0.4.1 — MIT — https://github.com/badLama/tardywoodtoy — embeds Comic Neue, Copyright 2014 The Comic Neue Project Authors, SIL Open Font License 1.1 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -82,6 +82,8 @@
   #dev { position: fixed; right: 10px; bottom: 9px; display: flex; gap: 5px; opacity: .45; }
   #dev button { font-size: 11px; padding: 2px 7px; border-width: 1px; }
   #dev:hover, #dev.armed { opacity: 1; }
+  #mode { position: fixed; right: 10px; top: 9px; display: flex; gap: 5px; z-index: 2; }
+  #mode button { font-size: 13px; padding: 2px 9px; border-width: 2px; }
   #resetask { position: fixed; right: 12px; bottom: 42px; display: none; z-index: 3;
               max-width: 250px; background: #fff; color: #000; border: 2.5px solid #000;
               border-radius: 15px 10px 17px 12px / 11px 16px 10px 15px;
@@ -122,6 +124,7 @@
     #home .btns button { min-height: 48px; }
     #dev { opacity: .7; }
     #dev button { min-height: 34px; font-size: 13px; padding: 4px 11px; }
+    #mode button { min-height: 34px; padding: 4px 11px; }
     #resetask { font-size: 14px; bottom: 52px; }
 
     canvas, button { touch-action: manipulation; }
@@ -153,7 +156,7 @@
   <p class="note">Your wood lives in this browser and nowhere else. Clearing the browser's
     data clears the wood, and it will not follow you to another browser.</p>
   <p class="rotate">turn your phone sideways &mdash; the wood is wider than it is tall.</p>
-  <div class="foot">v0.4.0 &middot; MIT &middot;
+  <div class="foot">v0.4.1 &middot; MIT &middot;
     <a href="https://github.com/badLama/tardywoodtoy">source</a> &middot;
     <a href="mailto:tardywood@gmail.com">tardywood@gmail.com</a></div>
 </div>
@@ -178,8 +181,10 @@
 <div id="resetask">Are you sure? It will clear this wood &mdash; every tree, and any seed
   in hand. There is no undo.</div>
 
-<div id="giftask">A bird brought this one. Choose what it grows into?
+<div id="giftask">A <span id="critter">bird</span> brought this one. Choose what it grows into?
   <div><button id="gift-yes">choose the tree</button><button id="gift-no">plant it as it is</button></div></div>
+
+<div id="mode" style="display:none"><button data-mode="regular" class="on">regular</button><button data-mode="halloween">halloween</button></div>
 
 <div id="dev" style="display:none">
   <button data-home="1">main page</button><button data-reset="1">reset</button>
@@ -194,7 +199,11 @@ const STAGES      = [0, 4, 16, 48, 264, 840];
 const STAGE_DRAIN = [100 / 36, 100 / 28, 100 / 20, 100 / 14, 100 / 12, 100 / 10];
 function drainRate(gh) { return STAGE_DRAIN[stageOf(gh)]; }
 const INK         = "#000";
-const PAPER       = "#fff";
+const MODE_KEY = "tardywood.mode";
+const SKY_H = "#bdbdbd", GROUND_H = "#555", WATER_H = "#7fb2ff";
+let HALLOWEEN = false;
+try { HALLOWEEN = localStorage.getItem(MODE_KEY) === "halloween"; } catch (e) {}
+let PAPER = HALLOWEEN ? SKY_H : "#fff";
 const OUTLINE     = 1.15;
 const MIN_LINE    = 0.12;
 const PEN_THIN    = 0.30;
@@ -204,7 +213,7 @@ const BARK_LEN    = 11;
 const BARK_INK    = 0.9;
 const TAPER       = 0.66;
 const TAPER_MIN   = 4;
-const WATER_COL   = "#2563eb";
+let WATER_COL     = HALLOWEEN ? WATER_H : "#2563eb";
 const fontFam = "'Comic Sans MS', 'Chalkboard SE', 'Segoe Print', 'Comic Neue', cursive, sans-serif";
 const LEAF_COL    = "rgb(30,170,45)";
 const GRASS_TALL  = "rgb(23,128,34)";
@@ -638,7 +647,7 @@ let bubbleT = 0, bubbleTxt = null, bubbleTimer = null;
 const PLANT_TIME = 4.2, DIG_THRUSTS = 3, DIG_REACH = 12, HOLE_DEPTH = 5;
 const DIG_END = 0.62, SOW_END = 0.80;
 let planting = 0, plantAt = 0, seedDrop = null, lookAt = null, sowed = false;
-function handsBusy() { return planting > 0 || watering > 0 || filling > 0; }
+function handsBusy() { return planting > 0 || watering > 0 || filling > 0 || lift != null; }
 let plantSeed = null, actOn = null;
 let giftAt = null, chooseFor = null;
 
@@ -743,7 +752,7 @@ function growRing() {
   const x0 = gaps[Math.floor(Math.random() * gaps.length)], C1 = CIRCUM + RING_STEP;
   const f = hi < x0 ? x => { x = ringWrap(x); return x < x0 ? x : x + RING_STEP; }
                     : x => { x = ringWrap(x); return x >= x0 ? x : (x - RING_STEP + C1) % C1; };
-  for (const o of S.trees.concat(S.loose || [], drops, [birdSeed, seedDrop, bird, av, SWAMP]))
+  for (const o of S.trees.concat(S.loose || [], drops, pumps(), pumpFall, skeletons, bats, [birdSeed, seedDrop, bird, witch, treant, lift, av, SWAMP]))
     if (o) o.x = f(o.x);
   targetX = f(targetX); partX = f(partX); plantAt = f(plantAt);
   if (lookAt != null) lookAt = f(lookAt);
@@ -1128,6 +1137,7 @@ function scheduleBird() {
   }, birdWait());
 }
 const BIRD_SPEED = 105;
+function offScreen(q) { return Math.abs(ringDelta(av.x, q.x)) > VW / SCALE / 2 + 80; }
 function birdTick(dt) {
   if (!bird) return;
   bird.flown += BIRD_SPEED * dt;
@@ -1136,11 +1146,11 @@ function birdTick(dt) {
     if (tooCloseToTrunk(bird.x) || inSwamp(bird.x)) bird.dropAt = bird.flown + 40;
     else {
       bird.dropped = true;
-      birdSeed = { x: ringWrap(bird.x + bird.dir * BIRD_BEAK), y: -bird.h, v: 0,
+      birdSeed = { x: ringWrap(bird.x + bird.dir * birdBeak()), y: -bird.h, v: 0,
                    seed: bird.seed };
     }
   }
-  if (bird.flown >= bird.cross) bird = null;
+  if (bird.flown >= bird.cross && offScreen(bird)) bird = null;
 }
 let birdSeed = null;
 function birdSeedTick(dt) {
@@ -1158,6 +1168,9 @@ function birdSeedTick(dt) {
 const BIRD_WING = 14, BIRD_BODY = 6.5;
 const BIRD_CHORD = 6.2;
 const BIRD_BEAK = 12.2;
+const BAT_BEAK = 9;
+function birdBeak() { return HALLOWEEN ? BAT_BEAK : BIRD_BEAK; }
+function critter() { return HALLOWEEN ? "bat" : "bird"; }
 function birdWing(X, Y, a, L, f, u, chord) {
   const dx = -f * 0.42 * Math.cos(a), dy = -Math.sin(a);
   const mx = X + dx * L * 0.55, my = Y + dy * L * 0.55;
@@ -1172,6 +1185,7 @@ function birdWing(X, Y, a, L, f, u, chord) {
 }
 function drawBird() {
   if (!bird) return;
+  if (HALLOWEEN) return drawBat(bird);
   const u = SCALE, f = bird.dir, ph = bird.flown / 10;
   const burst = 0.45 + 0.55 * Math.max(0, Math.sin(bird.flown / 130));
   const a = (0.28 + 0.82 * Math.sin(ph)) * burst;
@@ -1198,6 +1212,518 @@ function drawBird() {
                    [hx + f * 1.2 * u, hy + 1.0 * u]], "bird|beak", 0.4, true);
   sketchPoly(ctx, birdWing(X + 0.6 * u * f, Y - 1.7 * u, a, BIRD_WING * u, f, u,
                            BIRD_CHORD * u), "bird|near", 0.6, true);
+  ctx.restore();
+}
+
+function batWing(X, Y, a, L, f, u) {
+  const tx = X - f * L * (0.36 + 0.2 * Math.cos(a)), ty = Y - L * Math.sin(a);
+  const bx = X - f * 11 * u, by = Y + 1.8 * u;
+  const pts = [[X, Y], [X - f * L * 0.1 + f * 0.8 * u, Y - L * 0.62 * Math.sin(a) - 1.6 * u], [tx, ty]];
+  for (let k = 1; k <= 5; k++) {
+    const t = k / 6, q = [tx + (bx - tx) * t, ty + (by - ty) * t];
+    if (k % 2 === 0) { q[0] += (X - q[0]) * 0.34; q[1] += (Y - q[1]) * 0.34; }
+    pts.push(q);
+  }
+  pts.push([bx, by]);
+  return pts;
+}
+function drawBat(b) {
+  const u = SCALE * 1.35, f = b.dir, ph = b.flown / 7 + (b.ph || 0);
+  const a = 0.55 + 0.75 * Math.sin(ph);
+  const swoop = b.ph === undefined ? 0 : 16 * Math.sin(b.flown / 85 + b.ph);
+  const X = sx(b.x), Y = sy(-(b.h + swoop)) + Math.sin(ph) * 2.2 * u + Math.sin(b.flown / 55 + (b.ph || 0)) * 1.0 * u;
+  const hx = X + f * 5.6 * u, hy = Y - 1.1 * u;
+  ctx.save();
+  ctx.strokeStyle = INK; ctx.fillStyle = INK; ctx.lineWidth = Math.max(1, 0.8 * u); ctx.lineJoin = "round";
+  sketchShape(ctx, batWing(X - 1.4 * u * f, Y + 0.6 * u, a * 0.8 - 0.25, BIRD_WING * 0.78 * u, f, u), "bat|far", 0.4);
+  sketchShape(ctx, ptsEllipse(X, Y, 4.8 * u, 2.9 * u, -0.12 * f, 9), "bat|body", 0.3);
+  sketchShape(ctx, ptsEllipse(hx, hy, 2.5 * u, 2.2 * u, 0, 8), "bat|head", 0.25);
+  sketchShape(ctx, [[hx - f * 1.7 * u, hy - 1.5 * u], [hx - f * 1.5 * u, hy - 4.7 * u],
+                    [hx - f * 0.1 * u, hy - 2.1 * u]], "bat|ear0", 0.2);
+  sketchShape(ctx, [[hx + f * 0.3 * u, hy - 2.0 * u], [hx + f * 1.3 * u, hy - 4.9 * u],
+                    [hx + f * 2.0 * u, hy - 1.2 * u]], "bat|ear1", 0.2);
+  ctx.fillStyle = "#ffe14a";
+  ctx.beginPath(); ctx.arc(hx + f * 1.1 * u, hy - 0.3 * u, 0.7 * u, 0, 7); ctx.fill();
+  if (b.seed && !b.dropped)
+    drawSeedGlyph(X + f * (BAT_BEAK + 1.4) * u, hy + 2.2 * u, SCALE * 0.58, "bird|carry", 0.34 * f, "#fff");
+  ctx.strokeStyle = INK; ctx.fillStyle = INK; ctx.lineWidth = Math.max(1, 0.8 * u);
+  sketchShape(ctx, batWing(X + 0.8 * u * f, Y - 0.8 * u, a, BIRD_WING * u, f, u), "bat|near", 0.4);
+  ctx.restore();
+}
+
+let bats = [], batWant = 2;
+function spawnBat() {
+  const dir = Math.random() < 0.5 ? -1 : 1, span = VW / SCALE, sky = sy(0) / SCALE, edge = span / 2 + 50;
+  let h = 0;
+  for (let i = 0; i < 5; i++) {
+    h = sky * (0.3 + Math.random() * 0.48);
+    if (!bats.some(function (q) { return Math.abs(ringDelta(q.x, av.x - dir * edge)) < 160 && Math.abs(q.h - h) < 45; })) break;
+  }
+  bats.push({ x: ringWrap(av.x - dir * edge), dir: dir, h: h, flown: 0, cross: edge * 2,
+              speed: 0.85 + Math.random() * 0.3, ph: Math.random() * 6.3, seed: null, dropped: false });
+}
+function batsMove(dt) {
+  for (let i = bats.length - 1; i >= 0; i--) {
+    const b = bats[i], d = BIRD_SPEED * b.speed * dt;
+    b.flown += d; b.x = ringWrap(b.x + b.dir * d);
+    if (b.flown >= b.cross && offScreen(b)) bats.splice(i, 1);
+  }
+}
+function batThere(q) {
+  const d = ringDelta(av.x, q.x), half = VW / SCALE / 2, leaving = d * q.dir > 0;
+  return leaving ? Math.abs(d) < half - 62 : Math.abs(d) < half + 90;
+}
+function batsKeep() {
+  const n = (bird && batThere(bird) ? 1 : 0) + bats.filter(batThere).length;
+  if (n < batWant) { spawnBat(); if (Math.random() < 0.3) batWant = Math.random() < 0.5 ? 2 : 3; }
+}
+function batsTick(dt) { batsMove(dt); if (HALLOWEEN && !CALM) batsKeep(); }
+
+const PUMPKIN = "#f2c518", PUMPKIN_MAX = 3;
+const PUMP_R = 7;
+const PUMP_HEAD = 9.5, PUMP_HEAD_UP = 0.5;
+const PUMP_LIFT = 16;
+const PUMP_G = 520;
+const LIFT_T = 0.9;
+const PUMP_LIFE = 120, PUMP_FADE = 3;
+let pumpFall = [];
+let lift = null;
+function pumps() { return S.pumpkins || (S.pumpkins = []); }
+function pumpkinCount() { return pumps().length + (S.worn ? 1 : 0) + pumpFall.length; }
+function witchCarries() { return pumpkinCount() < PUMPKIN_MAX; }
+function pumpExpire(now) {
+  const L = pumps();
+  let gone = false;
+  for (let i = L.length - 1; i >= 0; i--) {
+    if (L[i].at == null) L[i].at = now;
+    else if (now - L[i].at > PUMP_LIFE * 1000) { L.splice(i, 1); gone = true; }
+  }
+  if (gone) save();
+}
+function pumpNear(wx) {
+  let best = -1, bd = PUMP_R + 6;
+  pumps().forEach(function (g, i) { const d = Math.abs(ringDelta(g.x, wx)); if (d < bd) { bd = d; best = i; } });
+  return best;
+}
+function pumpLanding(q) {
+  const t = (-q.v + Math.sqrt(q.v * q.v - 2 * PUMP_G * q.y)) / PUMP_G;
+  return ringWrap(q.x + q.vx * t);
+}
+function pumpTick(dt) {
+  pumpExpire(Date.now());
+  for (let i = pumpFall.length - 1; i >= 0; i--) {
+    const q = pumpFall[i];
+    q.v += PUMP_G * dt; q.y += q.v * dt; q.x = ringWrap(q.x + q.vx * dt); q.rot += q.spin * dt;
+    if (q.y < 0) continue;
+    q.y = 0;
+    if (q.v > 110) { q.v *= -0.34; q.vx *= 0.5; q.spin *= 0.5; continue; }
+    pumpFall.splice(i, 1);
+    let x = q.x;
+    if (atSwamp(x)) x = ringWrap(SWAMP.x + (ringDelta(SWAMP.x, x) >= 0 ? 1 : -1) * (SWAMP.w / 2 + BRINK + PUMP_R));
+    pumps().push({ x: x, id: Math.random().toString(36).slice(2, 8), at: Date.now() });
+    save();
+  }
+}
+function onHead(px, py) {
+  const u = SCALE, hx = sx(av.x) + 2.4 * u * av.face, hy = sy(0) - 49 * u;
+  return Math.hypot((px - hx) / (11 * u), (py - hy) / (11 * u)) < 1;
+}
+function dropWorn() {
+  S.worn = false;
+  const f = av.face, dir = atSwamp(ringWrap(av.x + f * 40)) ? -f : f;
+  pumpFall.push({ x: ringWrap(av.x + 2.4 * f), y: -(49 - 0.88 * PUMP_R), v: -120, vx: dir * 30,
+                  rot: 0, spin: dir * 5 });
+  save(); wake();
+}
+function liftBow() {
+  if (!lift) return 0;
+  const k = lift.t / LIFT_T, sm = function (x) { return x * x * (3 - 2 * x); };
+  return 0.75 * (k < 0.4 ? sm(k / 0.4) : k < 0.5 ? 1 : 1 - sm(Math.min(1, (k - 0.5) / 0.5)));
+}
+
+function drawPumpkin(cx, X, Y, r, rot, turn, key) {
+  const c = Math.cos(rot), s = Math.sin(rot), t = turn * 0.22;
+  const P = function (x, y) { return [X + (x * c - y * s) * r, Y + (x * s + y * c) * r]; };
+  const poly = function (pts, k, amp) { sketchShape(cx, pts.map(function (q) { return P(q[0], q[1]); }), key + k, amp); };
+  const amp = Math.max(0.4, r * 0.05);
+  cx.save();
+  cx.strokeStyle = INK; cx.lineJoin = "round"; cx.lineWidth = Math.max(1, r * 0.14);
+  cx.fillStyle = PUMPKIN;
+  sketchShape(cx, ptsEllipse(X, Y, r, r * 0.88, rot, 12), key + "|body", amp);
+  cx.lineWidth = Math.max(0.8, r * 0.09);
+  for (const side of [-1, 1])
+    sketchPoly(cx, [P(side * 0.44 + t, -0.76), P(side * 0.62 + t, -0.28), P(side * 0.62 + t, 0.28),
+                    P(side * 0.44 + t, 0.76)], key + "|rib" + side, amp * 0.6, false);
+  cx.lineWidth = Math.max(0.8, r * 0.09); cx.fillStyle = INK;
+  poly([[-0.16, -0.84], [-0.1, -1.12], [0.14, -1.18], [0.2, -0.84]], "|stem", amp * 0.4);
+  poly([[-0.56 + t, -0.02], [-0.2 + t, -0.02], [-0.38 + t, -0.38]], "|eye0", amp * 0.4);
+  poly([[0.2 + t, -0.02], [0.56 + t, -0.02], [0.38 + t, -0.38]], "|eye1", amp * 0.4);
+  poly([[-0.08 + t, 0.1], [0.08 + t, 0.1], [t, -0.04]], "|nose", amp * 0.3);
+  poly([[-0.6 + t, 0.24], [-0.3 + t, 0.36], [t, 0.4], [0.3 + t, 0.36], [0.6 + t, 0.24],
+        [0.46 + t, 0.52], [0.3 + t, 0.44], [0.15 + t, 0.62], [t, 0.48], [-0.15 + t, 0.62],
+        [-0.3 + t, 0.44], [-0.46 + t, 0.52]], "|mouth", amp * 0.4);
+  cx.restore();
+}
+function drawPumpkins() {
+  const r = PUMP_R * SCALE;
+  for (const g of pumps())
+    if (onScreen(g.x)) {
+      const left = g.at == null ? 1e9 : PUMP_LIFE - (Date.now() - g.at) / 1000;
+      ctx.globalAlpha = Math.max(0, Math.min(1, left / PUMP_FADE));
+      drawPumpkin(ctx, sx(g.x), sy(0) - r * 0.88 + 1, r, 0, 0, g.id);
+      ctx.globalAlpha = 1;
+    }
+  for (const q of pumpFall)
+    if (onScreen(q.x)) drawPumpkin(ctx, sx(q.x), sy(q.y) - r * 0.88, r, q.rot, 0, "pumpkin|fall");
+}
+function drawLifted(head) {
+  const u = SCALE, k = lift.t / LIFT_T, m = Math.max(0, Math.min(1, (k - 0.4) / 0.6)), e = m * m * (3 - 2 * m);
+  const gx = sx(lift.x), gy = sy(0) - PUMP_R * u * 0.88, hy = head[1] - PUMP_HEAD_UP * u;
+  drawPumpkin(ctx, gx + (head[0] - gx) * e, gy + (hy - gy) * e - Math.sin(Math.PI * m) * 14 * u,
+              (PUMP_R + (PUMP_HEAD - PUMP_R) * e) * u, 0, av.face * 0.9 * e, "pumpkin|lift");
+}
+
+const WITCH_SECS_MIN = 40, WITCH_SECS_MAX = 70;
+const WITCH_SPEED = 162.5, WITCH_K = 0.95;
+const WITCH_HAND = [11, 4.5];
+let witch = null, witchTimer = null;
+function scheduleWitch() {
+  clearTimeout(witchTimer); witchTimer = null;
+  if (CALM || !HALLOWEEN) return;
+  witchTimer = setTimeout(function () {
+    witchTimer = null;
+    if (!S || !HALLOWEEN) return;
+    if (witch) return scheduleWitch();
+    spawnWitch();
+  }, (WITCH_SECS_MIN + Math.random() * (WITCH_SECS_MAX - WITCH_SECS_MIN)) * 1000);
+}
+function spawnWitch() {
+  pumpExpire(Date.now());
+  const dir = Math.random() < 0.5 ? -1 : 1, span = VW / SCALE, sky = sy(0) / SCALE;
+  const edge = span / 2 + 60;
+  witch = { x: ringWrap(av.x - dir * edge), dir: dir, h: sky * (0.3 + Math.random() * 0.22),
+            flown: 0, t: 0, cross: edge * 2, dropAt: edge,
+            pumpkin: witchCarries(), set: false, dropped: false, dropT: 0 };
+  const spots = [];
+  for (let s = -(span / 2 - 50); s <= span / 2 - 50; s += 15) {
+    const lx = pumpLanding(witchRelease(ringWrap(av.x + dir * s)));
+    if (Math.abs(ringDelta(av.x, lx)) < span / 2 - 65 && !atSwamp(lx)) spots.push(s);
+  }
+  if (!spots.length) witch.pumpkin = false;
+  else witch.dropAt = edge + spots[Math.floor(Math.random() * spots.length)];
+  scheduleWitch();
+  wake();
+}
+function witchRelease(x) {
+  const f = witch.dir, hand = witchHandAt(0);
+  return { x: ringWrap(x + f * hand[0] * WITCH_K),
+           y: -(witch.h - (hand[1] + 7.6) * WITCH_K - 0.88 * PUMP_R),
+           v: 80, vx: f * (WITCH_SPEED * 0.8 + 30), rot: 0, spin: f * 4 };
+}
+function witchTick(dt) {
+  if (!witch) return;
+  witch.t += dt; witch.flown += WITCH_SPEED * dt;
+  witch.x = ringWrap(witch.x + witch.dir * WITCH_SPEED * dt);
+  if (witch.pumpkin && !witch.dropped) {
+    const lead = WITCH_SPEED * 0.5;
+    if (!witch.set && witch.flown >= witch.dropAt - lead) {
+      const lx = pumpLanding(witchRelease(ringWrap(witch.x + witch.dir * lead)));
+      if (Math.abs(ringDelta(av.x, lx)) > VW / SCALE / 2 - 50 || atSwamp(lx)) witch.dropAt += 20;
+      else witch.set = true;
+    }
+    if (witch.set && witch.flown >= witch.dropAt) {
+      witch.dropped = true; witch.dropT = witch.t; pumpFall.push(witchRelease(witch.x));
+    }
+  }
+  if (witch.flown >= witch.cross && offScreen(witch)) witch = null;
+}
+function witchHandAt(tr) {
+  const R = WITCH_HAND, B = [3, 5.5], F = [17, 8], REST = [10, 0.5];
+  const sm = function (x) { return x * x * (3 - 2 * x); };
+  const mix = function (a, b, k) { return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]; };
+  if (tr >= 0.5) return R;
+  if (tr > 0.14) return mix(R, B, sm((0.5 - tr) / 0.36));
+  if (tr > 0) return mix(B, F, sm((0.14 - tr) / 0.14));
+  if (tr === 0) return F;
+  return mix(F, REST, sm(Math.min(1, -tr / 0.7)));
+}
+function drawWitch() {
+  if (!witch) return;
+  const u = SCALE * WITCH_K, f = witch.dir, t = witch.t;
+  const a = -0.07 + 0.04 * Math.sin(t * 1.7), ca = Math.cos(a), sa = Math.sin(a);
+  const X0 = sx(witch.x), Y0 = sy(-witch.h) + Math.sin(t * 2.6) * 2.4 * u;
+  const W = function (x, y) { return [X0 + f * (x * ca - y * sa) * u, Y0 + (x * sa + y * ca) * u]; };
+  const poly = function (pts, key, amp, fill, lw) {
+    ctx.fillStyle = fill; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(0.8, (lw || 0.9) * u);
+    sketchShape(ctx, pts.map(function (q) { return W(q[0], q[1]); }), key, amp);
+  };
+  const line = function (pts, key, w, col) {
+    ctx.strokeStyle = col; ctx.lineWidth = Math.max(1, w * u);
+    sketchPoly(ctx, pts.map(function (q) { return W(q[0], q[1]); }), key, 0.5, false);
+  };
+  const dot = function (x, y, r, fill) {
+    const q = W(x, y); ctx.fillStyle = fill; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(0.8, 0.9 * u);
+    ctx.beginPath(); ctx.arc(q[0], q[1], r * u, 0, 7); ctx.fill(); ctx.stroke();
+  };
+  const fl = Math.sin(t * 9);
+  const tr = witch.dropped ? witch.dropT - t : witch.set ? (witch.dropAt - witch.flown) / WITCH_SPEED : 1e9;
+  const hand = witchHandAt(tr);
+  ctx.save();
+  ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, 0.9 * u);
+  poly([[-20, -1.6], [-33, -5], [-39, -3.4], [-36, -1.2], [-41, 0.8], [-36, 2.8], [-39, 4.6], [-32, 4.4], [-20, 1.6]],
+       "witch|brush", 0.5, "#d4b04c");
+  line([[-22, 0], [-38, -1]], "witch|b0", 0.5, INK); line([[-22, -0.8], [-36, -3]], "witch|b1", 0.5, INK);
+  line([[-22, 0.8], [-36, 3.2]], "witch|b2", 0.5, INK);
+  poly([[-21.5, -2.4], [-18.5, -2.4], [-18.5, 2.4], [-21.5, 2.4]], "witch|tie", 0.2, INK);
+  line([[-19, 0], [26, 0]], "witch|stick", 2.8, INK);
+  line([[-19, 0], [26, 0]], "witch|wood", 1.3, "#8a5a2b");
+  line([[0.5, -10.5], [8, -5.5], [15, -0.8]], "witch|arm1", 2.2, INK);
+  line([[-1.5, 8], [0, 14.5]], "witch|leg1", 2, INK);
+  poly([[-4.5, -11.5], [1.5, -12.8], [5.2, -9], [5.6, -4], [7.2, 0.8], [8.4, 4.8], [7.8, 9.8 + fl * 0.3],
+        [3.4, 12.4], [-1.5, 10.2 - fl * 0.4], [-6.5, 12.8 + fl * 0.5], [-11, 9.2 - fl * 0.6],
+        [-17, 6.4 + fl], [-14.5, 0.4], [-10.5, -3.5], [-7.5, -8]], "witch|dress", 0.5, INK);
+  line([[3.5, 9], [5, 15]], "witch|leg0", 2.2, INK);
+  poly([[3.6, 14.2], [7.2, 14.6], [9.6, 16.6], [4.2, 17.2]], "witch|boot", 0.3, INK);
+  line([[0.6, -17], [-5, -16.4 + fl * 0.3], [-10.5, -13.4 + fl * 0.8]], "witch|h0", 0.9, INK);
+  line([[0.9, -15.5], [-4.6, -13.8 + fl * 0.4], [-9, -9.4 + fl * 0.9]], "witch|h1", 0.9, INK);
+  line([[1.4, -14], [-2.5, -11.5], [-6, -7 + fl * 0.6]], "witch|h2", 0.9, INK);
+  const hc = W(3.6, -17);
+  ctx.fillStyle = "#fff"; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, 0.9 * u);
+  sketchShape(ctx, ptsEllipse(hc[0], hc[1], 3.7 * u, 4.1 * u, a * f, 9), "witch|head", 0.3);
+  poly([[7, -18.4], [10.4, -16.2], [7.2, -15.4]], "witch|nose", 0.2, "#fff");
+  dot(5.5, -18, 0.75, INK);
+  line([[5.6, -14.4], [7.4, -14.1]], "witch|mouth", 0.6, INK);
+  const bc = W(2.4, -22.8);
+  ctx.fillStyle = INK; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, 0.9 * u);
+  sketchShape(ctx, ptsEllipse(bc[0], bc[1], 9.2 * u, 2 * u, a * f, 11), "witch|brim", 0.3);
+  poly([[-4.8, -23.2], [8.6, -22.8], [5.6, -31.3], [-0.8, -37.3], [-8.5, -40.3], [-3.6, -35], [-5.2, -28.8]],
+       "witch|hat", 0.3, INK);
+  poly([[-4.7, -26.8], [7.3, -26.4], [8, -24.2], [-4.9, -24.6]], "witch|band", 0.2, PUMPKIN, 0.6);
+  dot(15, -0.8, 1.1, "#fff");
+  if (witch.pumpkin && !witch.dropped)
+    drawPumpkin(ctx, W(hand[0] + 0.4, hand[1] + 7.6)[0], W(hand[0] + 0.4, hand[1] + 7.6)[1],
+                PUMP_R * SCALE, Math.sin(t * 3) * 0.12 * f, 0, "witch|pumpkin");
+  line([[2.2, -10.2], [(2.2 + hand[0]) / 2 - 1.5, (-10.2 + hand[1]) / 2 + 3.5], hand], "witch|arm0", 2.4, INK);
+  dot(hand[0], hand[1], 1.3, "#fff");
+  ctx.restore();
+}
+
+const TREANT_SPEED = 18, TREANT_PAD = 80;
+let treant = null;
+let skeletons = [];
+function treantRange() {
+  return { lo: ringWrap(SWAMP.x + SWAMP.w / 2 + BRINK + TREANT_PAD),
+           span: CIRCUM - SWAMP.w - 2 * BRINK - 2 * TREANT_PAD };
+}
+function treantWalk(s, dir, d, span) {
+  const T = 2 * span;
+  let u = ((dir > 0 ? s : T - s) + d) % T;
+  if (u < 0) u += T;
+  return u < span ? [u, 1] : [T - u, -1];
+}
+function unseenSpot(d) {
+  const r = treantRange(), away = VW / SCALE / 2 + 150;
+  const at = function (o) { return ringWrap(r.lo + Math.max(0, Math.min(r.span, ringWrap(av.x + o - r.lo)))); };
+  const x = [d, -d, 2 * d, -2 * d].map(at).find(function (q) { return Math.abs(ringDelta(av.x, q)) > away - 60; });
+  return x != null ? x : at(d);
+}
+function newTreant() {
+  const x = unseenSpot(VW / SCALE / 2 + 150);
+  return { x: x, dir: ringDelta(x, av.x) > 0 ? 1 : -1, at: Date.now() / 1000, speed: TREANT_SPEED };
+}
+function walkStep(w, now) {
+  const r = treantRange(), s = Math.max(0, Math.min(r.span, ringWrap(w.x - r.lo)));
+  const a = treantWalk(s, w.dir, (w.speed || TREANT_SPEED) * (now - w.at), r.span);
+  w.x = ringWrap(r.lo + a[0]); w.dir = a[1]; w.at = now;
+}
+function treantStep(now) {
+  if (CALM) return;
+  if (treant) walkStep(treant, now);
+  for (const k of skeletons) walkStep(k, now);
+}
+function walkerNear(w) {
+  return HALLOWEEN && w != null && Math.abs(ringDelta(av.x, w.x)) < VW / SCALE / 2 + 70;
+}
+function treantNear() { return walkerNear(treant); }
+function walkersNear() { return walkerNear(treant) || skeletons.some(walkerNear); }
+setInterval(function () {
+  if (!HALLOWEEN || !S || CALM || raf != null) return;
+  treantStep(Date.now() / 1000);
+  if (walkersNear()) wake();
+}, 1500);
+function drawLimbs(limbs, inner, u) {
+  ctx.save();
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  for (let pass = 0; pass < 2; pass++) {
+    ctx.strokeStyle = pass ? inner : INK;
+    for (const g of limbs) {
+      const w0 = pass ? g.w0 - 2 * pen(g.w0, u) : g.w0, w1 = pass ? g.w1 - 2 * pen(g.w1, u) : g.w1;
+      if (w0 >= MIN_LINE) taperStroke(ctx, g.pts, w0, w1);
+    }
+  }
+  ctx.restore();
+}
+function drawTreant() {
+  if (!treantNear()) return;
+  const u = SCALE * 1.1, f = treant.dir, X = sx(treant.x), G = sy(0), t = nowSec();
+  const ph = ringWrap(treant.x) * Math.PI / 20;
+  const bob = Math.abs(Math.sin(ph)) * 1.4;
+  const L = function (x, y) { return [X + f * x * u, G - y * u]; };
+  const limbs = [];
+  const limb = function (pts, w0, w1) {
+    limbs.push({ pts: pts.map(function (q) { return L(q[0], q[1] + (q[1] > 8 ? bob : 0)); }), w0: w0 * u, w1: w1 * u });
+  };
+  const dir = function (a, len) { return [Math.sin(a) * len, Math.cos(a) * len]; };
+  for (const k of [0, 1]) {
+    const sw = Math.sin(ph + k * Math.PI), up = Math.max(0, Math.cos(ph + k * Math.PI)) * 2.6, fx = sw * 9;
+    limb([[0, 22], [fx * 0.5 + 2, 11], [fx, up]], 5.4, 3.6);
+    limb([[fx, up], [fx + 6, 0]], 2.8, 1.2);
+    limb([[fx, up], [fx - 4.5, 0]], 2.6, 1.2);
+  }
+  limb([[0, 20], [0.8, 38], [1.2, 56]], 15, 11);
+  for (const A of [[1, 1, 0], [-1, 1.15, 2.1]]) {
+    const S0 = [A[0] * 2, 49], E = [S0[0] + A[0] * 14.5 * A[1], S0[1] + 4.2 * A[1]];
+    const w = 0.55 * Math.sin(t * 3.2 + A[2]) * A[0];
+    const H = [E[0] + Math.sin(w + A[0] * 0.25) * 13, E[1] + Math.cos(w + A[0] * 0.25) * 13];
+    limb([S0, E, H], 4.4, 2.2);
+    for (const d of [-0.55, 0, 0.55]) {
+      const q = dir(w + A[0] * 0.25 + d, 6.5); limb([H, [H[0] + q[0], H[1] + q[1]]], 1.7, 0.7);
+    }
+  }
+  const sway = Math.sin(t * 1.1);
+  [[-0.95, 12], [-0.5, 16.5], [0.02, 20], [0.5, 15.5], [0.95, 11.5]].forEach(function (b, k) {
+    const m = dir(b[0] * 0.7, b[1] * 0.55), e = dir(b[0] + sway * 0.05 * (k - 2), b[1]);
+    const T = [1.2, 56], M = [T[0] + m[0], T[1] + m[1]], E = [T[0] + e[0], T[1] + e[1]];
+    limb([T, M, E], 4.2, 1.2);
+    const tw = dir(b[0] + 0.9, 7); limb([M, [M[0] + tw[0], M[1] + tw[1]]], 2, 0.8);
+  });
+  drawLimbs(limbs, PAPER, u);
+  ctx.save();
+  const F = function (x, y) { return L(x + 1.4, y + bob * 0.5); };
+  ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, 0.8 * u);
+  for (const m of [-1, 1]) {
+    ctx.fillStyle = INK;
+    sketchShape(ctx, [F(m * 5.4, 45.8), F(m * 1.0, 43.2), F(m * 1.5, 40.8), F(m * 5.0, 41.6)], "treant|eye" + m, 0.3);
+    const q = F(m * 3.2, 42.4);
+    ctx.fillStyle = PUMPKIN; ctx.beginPath(); ctx.arc(q[0], q[1], 1.05 * u, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle = INK;
+  sketchShape(ctx, [F(0, 39.2), F(1.1, 37.6), F(0, 36.4), F(-1.1, 37.6)], "treant|nose", 0.2);
+  sketchShape(ctx, [F(-5.2, 35.2), F(-2.6, 34.2), F(0, 34.6), F(2.6, 34.2), F(5.2, 35.2), F(4, 30.6),
+                    F(2.6, 32), F(1.3, 29.8), F(0, 31.8), F(-1.3, 29.8), F(-2.6, 32), F(-4, 30.6)], "treant|mouth", 0.3);
+  ctx.fillStyle = "#fff";
+  for (const x of [-3.3, -1.1, 1.1, 3.3]) sketchShape(ctx, [F(x - 0.9, 34.4), F(x + 0.9, 34.4), F(x, 32.4)], "treant|tooth" + x, 0.1);
+  ctx.restore();
+}
+
+const GRAVE_ODDS = 0.8, GRAVE_W = 18, GRAVE_H = 26;
+const GRAVE_K = 1.5;
+function gravesIn(slot) {
+  const grp = Math.floor(slot / 3), r = prng("grave4|" + grp), out = [];
+  const go = r() < GRAVE_ODDS, pick = Math.floor(r() * 3), two = r() < 0.35;
+  if (!go || slot % 3 !== pick) return out;
+  const x0 = slot * GRASS_STEP + 20 + r() * (GRASS_STEP - 40);
+  for (let i = 0; i < (two ? 2 : 1); i++) {
+    const x = ringWrap(x0 + i * (28 + r() * 14));
+    const st = { x: x, lean: (r() - 0.5) * 0.16, h: 0.88 + r() * 0.26,
+                 tone: r() < 0.5 ? "#dcdcdc" : "#cbcbcb", crack: r() < 0.35, id: slot + "." + i };
+    if (swampZone(x) === 0 && Math.abs(ringDelta(SPAWN_X, x)) >= 100) out.push(st);
+  }
+  return out;
+}
+const RIP = {
+  R: [[[0, 0], [0, 5.2], [2.5, 5.2], [3.4, 4.3], [3.4, 3.5], [2.5, 2.6], [0, 2.6]], [[1.5, 2.6], [3.4, 0]]],
+  I: [[[0.5, 5.2], [2.9, 5.2]], [[1.7, 5.2], [1.7, 0]], [[0.5, 0], [2.9, 0]]],
+  P: [[[0, 0], [0, 5.2], [2.5, 5.2], [3.4, 4.3], [3.4, 3.5], [2.5, 2.6], [0, 2.6]]]
+};
+function drawGrave(g) {
+  const u = SCALE * GRAVE_K, X = sx(g.x), G = sy(0), w = GRAVE_W, h = GRAVE_H * g.h, c = Math.cos(g.lean), sn = Math.sin(g.lean);
+  const P = function (x, y) { return [X + (x * c + y * sn) * u, G - (y * c - x * sn) * u]; };
+  const pts = function (a) { return a.map(function (q) { return P(q[0], q[1]); }); };
+  const top = [];
+  for (let i = 0; i <= 8; i++) { const a = Math.PI - Math.PI * i / 8; top.push([Math.cos(a) * w / 2, h - w / 2 + Math.sin(a) * w / 2]); }
+  ctx.save();
+  ctx.strokeStyle = INK; ctx.lineJoin = "round"; ctx.lineWidth = Math.max(1.1, 1.3 * u);
+  ctx.fillStyle = g.tone;
+  sketchShape(ctx, pts([[-w / 2, -1]].concat(top, [[w / 2, -1]])), "grave|" + g.id, 0.5);
+  ctx.lineWidth = Math.max(1, 0.9 * u);
+  const y0 = h * 0.42, x0 = -6.2;
+  [["R", 0], ["I", 4.5], ["P", 9]].forEach(function (L) {
+    RIP[L[0]].forEach(function (line, j) {
+      sketchPoly(ctx, pts(line.map(function (q) { return [q[0] + x0 + L[1], q[1] + y0]; })), "grave|" + g.id + "|" + L[0] + j, 0.25, false);
+    });
+  });
+  sketchPoly(ctx, pts([[0, y0 + 8.4], [0, y0 + 13.4]]), "grave|" + g.id + "|c0", 0.2, false);
+  sketchPoly(ctx, pts([[-1.8, y0 + 11.6], [1.8, y0 + 11.6]]), "grave|" + g.id + "|c1", 0.2, false);
+  if (g.crack) {
+    ctx.lineWidth = Math.max(0.8, 0.7 * u);
+    sketchPoly(ctx, pts([[7.2, h - 8], [8, h - 11], [7, h - 14], [7.9, h - 17.5]]), "grave|" + g.id + "|crack", 0.2, false);
+  }
+  ctx.lineWidth = Math.max(1, 1.0 * u); ctx.fillStyle = GROUND_H;
+  sketchShape(ctx, pts([[-w / 2 - 6, -0.6], [-w / 2 - 2, 1.8], [-4, 3.2], [4, 3.2], [w / 2 + 2, 1.8], [w / 2 + 6, -0.6]]),
+              "grave|" + g.id + "|mound", 0.5);
+  ctx.restore();
+}
+function drawGraves() {
+  const half = VW / SCALE / 2 + 40, n = Math.round(CIRCUM / GRASS_STEP);
+  const from = Math.floor((av.x - half) / GRASS_STEP) - 1, to = Math.floor((av.x + half) / GRASS_STEP);
+  for (let k = from; k <= to; k++)
+    for (const g of gravesIn(((k % n) + n) % n))
+      if (Math.abs(ringDelta(av.x, g.x)) < half) drawGrave(g);
+}
+
+const BONE = "#efe9d6";
+const SKELETON_SPEEDS = [16.9, 21.45];
+function newSkeletons() {
+  const away = VW / SCALE / 2 + 150, now = Date.now() / 1000;
+  return SKELETON_SPEEDS.map(function (v, k) {
+    const x = unseenSpot(away * [1.3, -1.7][k]);
+    return { x: x, dir: ringDelta(x, av.x) > 0 ? 1 : -1, at: now, speed: v, ph0: k * 2.1 };
+  });
+}
+function drawSkeleton(sk) {
+  if (!walkerNear(sk)) return;
+  const u = SCALE, f = sk.dir, X = sx(sk.x), G = sy(0), t = nowSec(), id = "skel" + sk.ph0;
+  const ph = ringWrap(sk.x) * Math.PI / 24 + sk.ph0;
+  const hip = 24 - Math.abs(Math.sin(ph)) * 1.5;
+  const L = function (x, y) { return [X + f * x * u, G - y * u]; };
+  const limbs = [], knobs = [];
+  const limb = function (pts, w0, w1) {
+    limbs.push({ pts: pts.map(function (q) { return L(q[0], q[1]); }), w0: w0 * u, w1: w1 * u });
+  };
+  for (const k of [0, 1]) {
+    const sw = Math.sin(ph + k * Math.PI), up = Math.max(0, Math.cos(ph + k * Math.PI)) * 1.6;
+    const fx = sw * 11, kx = fx * 0.5 + 3.4 * Math.abs(sw), ky = hip * 0.5 + 1, ay = 1.4 + up;
+    limb([[0, hip], [kx, ky]], 2.5, 2.0);
+    limb([[kx, ky], [fx, ay]], 2.0, 1.6);
+    limb([[fx - 0.6, ay], [fx + 5.2, 0.8 + up * 0.5]], 1.5, 1.1);
+    knobs.push([kx, ky, 1.5], [fx, ay, 1.1]);
+  }
+  limb([[0.2, hip + 1.5], [0.5, 33], [0.9, 44.5]], 2.0, 1.8);
+  for (const k of [0, 1]) {
+    const sw = Math.sin(ph + Math.PI + k * Math.PI), hx = sw * 10, ex = hx * 0.5 - 2.7 * Math.abs(sw) - 0.4;
+    limb([[0.4, 42.5], [ex, 32.2]], 2.0, 1.6);
+    limb([[ex, 32.2], [hx, 22.6]], 1.6, 1.3);
+    for (const d of [-1, 0, 1]) limb([[hx, 22.6], [hx + d * 1.4 + 0.8, 19.6]], 1.0, 0.7);
+    knobs.push([0.4, 42.5, 1.3], [ex, 32.2, 1.2]);
+  }
+  drawLimbs(limbs, BONE, u);
+  ctx.save();
+  ctx.strokeStyle = INK; ctx.lineJoin = "round"; ctx.lineWidth = Math.max(1, 0.9 * u); ctx.fillStyle = BONE;
+  const ell = function (x, y, rx, ry, key) { const c = L(x, y); sketchShape(ctx, ptsEllipse(c[0], c[1], rx * u, ry * u, 0, 10), id + key, 0.3); };
+  ell(0.4, hip + 0.5, 4.2, 2.5, "|pelvis");
+  knobs.forEach(function (q, i) { ell(q[0], q[1], q[2], q[2], "|k" + i); });
+  ell(0.9, 37.4, 4.6, 7.4, "|ribs");
+  for (const y of [40.6, 38.2, 35.8, 33.4])
+    sketchPoly(ctx, [L(-3.7, y + 0.3), L(0.4, y - 0.7), L(4.3, y + 0.2)], id + "|rib" + y, 0.2, false);
+  const jaw = Math.abs(Math.sin(t * 6 + sk.ph0)) * 0.9;
+  ell(1.6, 51.2, 5.7, 6.1, "|skull");
+  sketchShape(ctx, [L(-0.8, 47.6), L(5.9, 47.6), L(6.4, 45.6 - jaw), L(4.8, 43.9 - jaw), L(-0.2, 43.8 - jaw), L(-1.5, 45.4 - jaw * 0.6)],
+              id + "|jaw", 0.2);
+  for (const x of [0.7, 2.2, 3.7, 5.2]) sketchPoly(ctx, [L(x, 47.6), L(x, 45.2 - jaw)], id + "|tooth" + x, 0.1, false);
+  ctx.fillStyle = INK;
+  for (const x of [0.9, 4.4]) { const c = L(x, 52); sketchShape(ctx, ptsEllipse(c[0], c[1], 1.6 * u, 2 * u, 0, 8), id + "|eye" + x, 0.2); }
+  sketchShape(ctx, [L(2.9, 50), L(2.1, 47.9), L(3.7, 47.9)], id + "|nose", 0.1);
   ctx.restore();
 }
 
@@ -1291,7 +1817,7 @@ const SCRATCH_KEYS = [[0, -21], [12.86, -0.76], [-0.3, 14.49],
                       [-1.14, 12.24], [-0.42, 14.08], [9.58, 2.74]];
 const SCRATCH_DUR = 4.86;
 
-function drawFigure(cx, X, G, u, phase, face, armUp, body, hair, footAt, bow, idle, grip, reach) {
+function drawFigure(cx, X, G, u, phase, face, armUp, body, hair, footAt, bow, idle, grip, reach, wear) {
   const sw = Math.sin(phase), sw2 = Math.sin(phase + Math.PI);
   const bob = Math.abs(Math.sin(phase)) * 1.5 * u;
   const hipY = G - 24 * u + bob;
@@ -1350,6 +1876,7 @@ function drawFigure(cx, X, G, u, phase, face, armUp, body, hair, footAt, bow, id
   cx.fillStyle = PAPER;
   sketchShape(cx, ptsEllipse(hX, hY, r, 8.4 * u, hRot, 11), "av|head", 1.2);
   drawHair(cx, hair, hX, hY, r, Math.sin(phase * 0.8) * 2.2 * u, face);
+  if (wear) drawPumpkin(cx, hX, hY - PUMP_HEAD_UP * u, PUMP_HEAD * u, hRot, face * 0.9, "av|pumpkin");
   sketchPoly(cx, [root, e0, h0], "av|arm0", 1.1, false);
 
   if (body === "female") {
@@ -1361,7 +1888,7 @@ function drawFigure(cx, X, G, u, phase, face, armUp, body, hair, footAt, bow, id
                      [X + hw, hemY], [X + hw * .55, (topY + hemY) / 2]], "av|skirt", 1.0);
   }
 
-  return { hx: h0[0], hy: h0[1] };
+  return { hx: h0[0], hy: h0[1], head: [hX, hY] };
 }
 
 const CAN_W = 11, CAN_H = 9;
@@ -1396,11 +1923,13 @@ function drawAvatar() {
   const hand = drawFigure(ctx, X, G, u, av.phase, av.face,
                           filling > 0 ? CAN_REACH * u : 0,
                           S.body, S.hair, footAt,
-                          bowAmount() * BOW_MAX + runLean() + (dig ? dig.bow : 0), idleAct,
+                          bowAmount() * BOW_MAX + runLean() + (dig ? dig.bow : 0) + liftBow(), idleAct,
                           dig ? dig.top : upToo ? umbrellaGrip(X, G, u, av.face) : null,
                           dig ? dig.near
                               : watering > 0 ? { x: X + POUR_OUT * u * av.face,
-                                                 y: G - POUR_H * u } : null);
+                                                 y: G - POUR_H * u } : null,
+                          HALLOWEEN && S.worn && !lift);
+  if (HALLOWEEN && lift) drawLifted(hand.head);
   if (watering > 0 || filling > 0)
     drawCan(ctx, hand.hx + CAN_SIDE * u * av.face, hand.hy + CAN_HOLD * u, u, av.face);
   if (upToo) drawUmbrella(ctx, X, G, u, av.face);
@@ -1500,7 +2029,7 @@ function hintText() {
   const handFree = !S.seeds.length;
   if (handFree && ((birdSeed && inView(birdSeed.x)) ||
       (S.loose || []).some(function (g) { return looseState(g) === "ripe" && inView(g.x); })))
-    return "a bird dropped something…";
+    return "a " + critter() + " dropped something…";
   if (handFree && S.trees.some(hasRipeSeed)) return "a seed has ripened";
   if (raining()) return "rain…";
   if (S.seeds.length) return "hmm\u2026 where shall I plant the seed?";
@@ -1595,9 +2124,14 @@ function inView(wx) { return Math.abs(ringDelta(av.x, wx)) < VW / 2 / SCALE; }
 
 function draw() {
   if (!S) return;
-  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, VW, VH);
+  ctx.fillStyle = PAPER; ctx.fillRect(0, 0, VW, VH);
+  if (HALLOWEEN) { ctx.fillStyle = GROUND_H; ctx.fillRect(0, sy(0), VW, VH - sy(0)); }
   drawGround();
   if (planting > 0) drawHole(plantAt, holeOpen());
+  if (HALLOWEEN) {
+    drawGraves(); drawTreant();
+    for (const k of skeletons) drawSkeleton(k);
+  }
   const seen = new Set();
   for (const T of S.trees) {
     if (!onScreen(T.x)) continue;
@@ -1641,8 +2175,11 @@ function draw() {
     drawSeedGlyph(sx(g.x), sy(0) - SEED_RY * SCALE, SCALE, g.id + "|loose", 0.07,
                   looseState(g) === "rotten" ? INK : "#fff");
   }
+  if (HALLOWEEN) drawPumpkins();
   drawBird();
+  if (HALLOWEEN) for (const b of bats) drawBat(b);
   if (birdSeed) drawSeedGlyph(sx(birdSeed.x), sy(birdSeed.y), SCALE, "bird|falling", 0.25);
+  if (HALLOWEEN) drawWitch();
   const wet = rainNow();
   if (wet > 0) drawRain(wet);
   if (bubbleT > 0 && bubbleTxt)
@@ -1656,6 +2193,7 @@ function runLean() {
 function restPhase() { return Math.round((av.phase - REST_PH) / Math.PI) * Math.PI + REST_PH; }
 function offStance() { return Math.abs(av.phase - restPhase()); }
 function needsLoop() { return windLive(nowSec()) || idleAct || raining() || bird || birdSeed ||
+                              witch || bats.length || pumpFall.length || lift || walkersNear() ||
                               Math.abs(av.v) > 0.4 || Math.abs(ringDelta(av.x, targetX)) > 1.5 || keyDir ||
                               watering > 0 || planting > 0 || drops.length || puddleT > 0 ||
                               blocked > 0 || dry > 0 || full > 0 || justSown > 0 || filling > 0 || bubbleT > 0 ||
@@ -1702,6 +2240,15 @@ function frame(now) {
       filling = 1.1;
     } else if (pending === "take") {
       if (S.seeds.length) full = REFUSE_T; else takeLoose(actOn);
+    } else if (pending === "pump") {
+      const g = pumps().find(function (q) { return q.id === actOn; });
+      if (g && S.worn) full = REFUSE_T;
+      else if (g) {
+        av.face = ringDelta(av.x, g.x) >= 0 ? 1 : -1;
+        pumps().splice(pumps().indexOf(g), 1);
+        S.worn = true; lift = { t: 0, x: g.x };
+        save();
+      }
     } else {
       const i = treeBySeed(actOn);
       if (i >= 0) {
@@ -1724,6 +2271,7 @@ function frame(now) {
       save();
     }
   }
+  if (lift) { lift.t += dt; if (lift.t >= LIFT_T) lift = null; }
 
   if (planting > 0) {
     planting -= dt;
@@ -1787,15 +2335,28 @@ function frame(now) {
   idleTick(dt);
   birdTick(dt);
   birdSeedTick(dt);
+  batsTick(dt);
+  witchTick(dt);
+  pumpTick(dt);
+  if (HALLOWEEN) treantStep(Date.now() / 1000);
   draw();
   raf = needsLoop() ? requestAnimationFrame(step) : (cancelAnimationFrame(raf), null);
   if (raf === null) {
     saveAt();
-    scheduleWind();
-    if (!idleTimer) scheduleIdle(true);
-    if (!rainTimer) scheduleRain();
-    if (!birdTimer) scheduleBird();
+    setAlarms();
+  } else if (now - alarmsAt > 2000) {
+    alarmsAt = now;
+    setAlarms();
+    if (Math.abs(av.v) < 0.4 && !keyDir) saveAt();
   }
+}
+let alarmsAt = 0;
+function setAlarms() {
+  scheduleWind();
+  if (!idleTimer) scheduleIdle(true);
+  if (!rainTimer) scheduleRain();
+  if (!birdTimer) scheduleBird();
+  if (!witchTimer) scheduleWitch();
 }
 
 function syncCare() {
@@ -1834,6 +2395,8 @@ cv.addEventListener("mousedown", function (e) {
   const wx = toWorldX(px);
   const near = treeNear(wx);
 
+  if (HALLOWEEN && S.worn && onHead(px, py)) { dropWorn(); return; }
+
   const reachable = py >= sy(-SEED_LIFT);
   const lying = reachable ? seedNear(wx) : -1;
   if (lying >= 0) {
@@ -1847,6 +2410,13 @@ cv.addEventListener("mousedown", function (e) {
     const g = S.loose[gift];
     targetX = ringWrap(g.x + (ringDelta(g.x, av.x) >= 0 ? 20 : -20));
     actOn = g.id; pending = "take";
+    wake(); return;
+  }
+  const lyingP = HALLOWEEN && py >= sy(-PUMP_LIFT) ? pumpNear(wx) : -1;
+  if (lyingP >= 0) {
+    const g = pumps()[lyingP];
+    targetX = ringWrap(g.x + (ringDelta(g.x, av.x) >= 0 ? 14 : -14));
+    actOn = g.id; pending = "pump";
     wake(); return;
   }
   if (py < sy(0) && near >= 0) {
@@ -1881,6 +2451,8 @@ cv.addEventListener("mousemove", function (e) {
   const over = (e.clientY >= sy(-SEED_LIFT) &&
                 (seedNear(wx) >= 0 || looseNear(wx) >= 0)) ||
                (!ground && treeNear(wx) >= 0) ||
+               (HALLOWEEN && ((e.clientY >= sy(-PUMP_LIFT) && pumpNear(wx) >= 0) ||
+                              (S.worn && onHead(e.clientX, e.clientY)))) ||
                (ground && atSwamp(wx)) ||
                (ground && S.seeds.length > 0 && !tooCloseToTrunk(wx) && !atSwamp(wx));
   cv.style.cursor = over ? "pointer" : "default";
@@ -1976,8 +2548,12 @@ function drawTreeInto(cn, cx, W, H, sc, seed, key, gh) {
   cx.fillStyle = "#fff"; cx.fillRect(0, 0, W, H);
   cx.strokeStyle = INK; cx.lineWidth = Math.max(1.4, sc * 1.3);
   sketchLine(cx, 6, gy, W - 6, gy, key + "|ground", 1.8);
-  drawStrokes(cx, growTree(seed, gh), wx => W / 2 + wx * sc, wy => gy + wy * sc, sc, 100,
-              parseSeed(seed).bark);
+  const keep = PAPER;
+  PAPER = "#fff";
+  try {
+    drawStrokes(cx, growTree(seed, gh), wx => W / 2 + wx * sc, wy => gy + wy * sc, sc, 100,
+                parseSeed(seed).bark);
+  } finally { PAPER = keep; }
 }
 function drawPreview() {
   const z = previewSize();
@@ -1993,13 +2569,37 @@ function drawHomeTree() {
 }
 
 const homeEl = document.getElementById("home"), plantEl = document.getElementById("plant"),
-      devEl = document.getElementById("dev");
+      devEl = document.getElementById("dev"), modeEl = document.getElementById("mode");
 function enterWorld() { homeEl.style.display = "none"; plantEl.style.display = "none";
-                        devEl.style.display = "flex"; }
+                        devEl.style.display = "flex"; modeEl.style.display = "flex"; }
+function applyMode() {
+  PAPER = HALLOWEEN ? SKY_H : "#fff";
+  WATER_COL = HALLOWEEN ? WATER_H : "#2563eb";
+  layers.clear();
+  document.getElementById("critter").textContent = critter();
+  for (const b of modeEl.children)
+    b.classList.toggle("on", (b.dataset.mode === "halloween") === HALLOWEEN);
+  if (!HALLOWEEN) { witch = null; bats = []; }
+  else {
+    if (!treant) treant = newTreant();
+    if (!skeletons.length) skeletons = newSkeletons();
+  }
+  scheduleWitch();
+  if (S) { wake(); draw(); }
+}
+function setMode(on) {
+  HALLOWEEN = !!on;
+  try { localStorage.setItem(MODE_KEY, HALLOWEEN ? "halloween" : "regular"); } catch (e) {}
+  applyMode();
+}
+modeEl.addEventListener("click", function (e) {
+  const b = e.target.closest("button");
+  if (b) setMode(b.dataset.mode === "halloween");
+});
 function showHome() {
   saveAt();
   plantEl.style.display = "none";
-  devEl.style.display = "none";
+  devEl.style.display = "none"; modeEl.style.display = "none";
   homeEl.style.display = "";
   soloEl.textContent = S ? "back to your wood" : "plant alone";
   drawHomeTree();
@@ -2031,7 +2631,7 @@ document.getElementById("gift-no").onclick = function () {
 document.getElementById("gift-yes").onclick = function () {
   giftEl.style.display = "none";
   chooseFor = S.seeds[0];
-  devEl.style.display = "none"; plantEl.style.display = "";
+  devEl.style.display = "none"; modeEl.style.display = "none"; plantEl.style.display = "";
   drawPreview();
 };
 
@@ -2076,6 +2676,7 @@ if (S) {
 } else {
   drawHomeTree();
 }
+applyMode();
 </script>
 </body>
 </html>
